@@ -11,8 +11,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <string.h>
 
-#define PAYLOAD_SIZE 56
+#include "../includes/client.h"
 
 int build_echo_request(unsigned char* buff) {
 
@@ -58,6 +59,6 @@ int build_echo_request(unsigned char* buff) {
 
 	// On calcul la taille du paquets
 	icmph->checksum = icmp_checksum(buff, 8 + PAYLOAD_SIZE);
-	
+
 	return 8 + PAYLOAD_SIZE;
 }

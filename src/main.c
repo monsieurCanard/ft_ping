@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <string.h>
 
 
 #include "../includes/client.h"
@@ -57,17 +58,24 @@ int main(int ac, char **av) {
 
 	sockaddr.sin_family = AF_INET;
 	sockaddr.sin_port   = 0; // ICMP does not use ports, set to 0
-	inet_aton(client.ip, &sockaddr.sin_addr);
+
+
+	if(inet_aton(client.ip, &sockaddr.sin_addr) < 0)
+	{
+		perror("Inet_aton ");
+		return (1);
+	}
 
 	if (connect(client._fd, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0)
 	{
-		printf("Cannot connect to Socket ");
+		perror("Connect Socket");
 		return 1;
 	}
 
+	unsigned char buff[8 + PAYLOAD_SIZE];
+	int payload_size = build_echo_request(buff);
 
-	struct icmphdr *icmph;
-	icmph 
+	sendto(client._fd, buff,payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
 	
 	while(1) {
 
