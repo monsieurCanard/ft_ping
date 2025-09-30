@@ -152,3 +152,26 @@ int build_echo_request(unsigned char* buff) {
 	return 8 + PAYLOAD_SIZE;
 }
 ```
+
+ndianness (ordre des octets)
+
+Un ordi peut stocker les entiers en little endian (Intel, AMD) ou big endian (réseaux, certaines architectures).
+
+Little endian → l’octet de poids faible vient en premier en mémoire.
+
+Big endian → l’octet de poids fort vient en premier.
+
+En réseau, on utilise toujours le format big endian, qu’on appelle network byte order.
+Mais sur ton PC (Intel/Linux), c’est du little endian.
+
+👉 Du coup, quand on écrit/lit un champ dans un paquet, on doit convertir.
+
+🔹 Les fonctions de conversion
+
+htons(x) → host to network short (16 bits → uint16_t)
+
+htonl(x) → host to network long (32 bits → uint32_t)
+
+ntohs(x) → network to host short (16 bits → uint16_t)
+
+ntohl(x) → network to host long (32 bits → uint32_t)

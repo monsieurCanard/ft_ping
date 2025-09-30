@@ -44,7 +44,7 @@ int icmp_checksum(unsigned char* buff, int len) {
 		return (uint16_t)(~sum);
 }
 
-int build_echo_request(unsigned char* buff) {
+int build_echo_request(unsigned char* buff, int seq) {
 
 	struct icmphdr *icmph = (struct icmphdr*)buff;
 	
@@ -72,7 +72,7 @@ int build_echo_request(unsigned char* buff) {
 
 	// Numero de sequence du paquet
 	// Si je devais envoyer plusieurs ping je pourrai incrementer cette valeur
-	icmph->un.echo.sequence = 1;
+	icmph->un.echo.sequence = seq;
 
 
 	// On remplit le payload avec un timestamp
@@ -89,5 +89,5 @@ int build_echo_request(unsigned char* buff) {
 	// On calcul la taille du paquets
 	icmph->checksum = icmp_checksum(buff, 8 + PAYLOAD_SIZE);
 
-	return 8 + PAYLOAD_SIZE;
+	return PAYLOAD_SIZE + 8;
 }
