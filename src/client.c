@@ -15,6 +15,35 @@
 
 #include "../includes/client.h"
 
+int icmp_checksum(unsigned char* buff, int len) {
+	const uint16_t* data = (uint16_t*)buff;
+	int sum = 0;
+
+	// Le checksum est la somme de tout les mots de 16 bits
+	// On additionne tout les bits du paquet mais 2 par 2 pour correspondre a la norme ICMP 
+	while(len > 1) {
+		sum += *data++;
+		len -= 2;
+	}
+
+	// Si il reste un octet a la fin 
+	if(len == 1) {
+		uint16_t last = 0;
+		*(uint8_t*)&last = *(const uint8_t*)data;
+		sum += last;
+	}
+
+	// Si la somme depasse 16 bits, on fold
+	// sum & 0XFFFF on garde les 16 bits de poids faible
+	// sum >> 16 : et on ajouter les bits qui depasses 16 bits
+	while(sum >> 16) {
+		sum = (sum & 0XFFFF) + (sum >> 16);
+	}
+		// Le checksum ICMP est defini comme le complement a un de la sommes
+		// Le complement consiste a inverser tous les bits
+		return (uint16_t)(~sum);
+}
+
 int build_echo_request(unsigned char* buff) {
 
 	struct icmphdr *icmph = (struct icmphdr*)buff;

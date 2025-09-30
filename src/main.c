@@ -73,12 +73,16 @@ int main(int ac, char **av) {
 	}
 
 	unsigned char buff[8 + PAYLOAD_SIZE];
-	int payload_size = build_echo_request(buff);
-
-	sendto(client._fd, buff,payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
 	
 	while(1) {
+		
+		int payload_size = build_echo_request(buff);
+	
+		sendto(client._fd, buff, payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
+		
+		recvfrom(client._fd, buff, payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
 
+		
 
 	}
 	return 0;
