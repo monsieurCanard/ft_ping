@@ -61,7 +61,11 @@ int build_echo_request(unsigned char* buff, int seq) {
 
 
 	// On remplit le payload avec un timestamp
-	//TODO : Verifier si j'ai la taille dans mon payload pour le timestamp
+	if(PAYLOAD_SIZE < sizeof(struct timeval)) {
+		fprintf(stderr, "Payload size too small for timestamp\n");
+		return (ERROR);
+	}
+	
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	memcpy(buff + 8, &tv, sizeof(tv));

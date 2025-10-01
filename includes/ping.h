@@ -14,12 +14,13 @@
 #include <netinet/ip.h>
 #include <math.h>
 
-
 #define PAYLOAD_SIZE 56
 #define TIMEOUT_SEC 1
 #define TIMEOUT_USEC 0
+
 #define ERROR -1
 #define SUCCESS 0
+
 
 typedef struct rtt {
 	double min;
@@ -28,7 +29,7 @@ typedef struct rtt {
 	double mdev;
 
 	double total;
-	double total_sq;
+	double delta;
 } t_rtt;
 
 typedef struct counter {
@@ -39,14 +40,17 @@ typedef struct counter {
 
 typedef struct ping_client {
 
-	int _fd;
-	char* ip;
-	int seq;
+	int 		_fd;
+	char* 	ip;
+	int 		seq;
 	
 	struct timeval *start_time;
+	struct timeval *send_time;
+	struct timeval *recv_time;
+	struct hostent* infos;
+	
 	t_rtt rtt;
 	t_counter counter;
-	struct hostent* infos;
 
 } t_ping_client;
 
@@ -56,6 +60,4 @@ int create_client(t_ping_client *client, struct sockaddr_in *sockaddr, char *add
 int build_echo_request(unsigned char* buff, int seq);
 int icmp_checksum(unsigned char* buff, int len);
 
-void update_time_stats(t_rtt *rtt, double new_rtt);
-
-int verify_response(t_ping_client *client, unsigned char *buff);
+void update_time_stats(t_rtt *rtt, double new_rtt, int count);

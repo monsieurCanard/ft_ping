@@ -2,10 +2,9 @@
 
 int create_client(t_ping_client *client, struct sockaddr_in *sockaddr, char *address) {
 
-
 	client->infos = gethostbyname(address);
 	if(!client->infos) {
-		printf("ft_ping handle IPv4 adress and nothing else !\n");
+		fprintf(stderr, "Could not resolve hostname %s\n", address);
 		return (ERROR);
 	}
 
@@ -24,7 +23,7 @@ int create_client(t_ping_client *client, struct sockaddr_in *sockaddr, char *add
 
 	memset(sockaddr, 0, sizeof(*sockaddr));
 	sockaddr->sin_family = AF_INET;
-	sockaddr->sin_port   = 0; // ICMP does not use ports, set to 0
+	sockaddr->sin_port   = 0;
 	sockaddr->sin_addr.s_addr = inet_addr(client->ip);
 
 	if(inet_aton(client->ip, &sockaddr->sin_addr) < 0)
@@ -42,18 +41,28 @@ int create_client(t_ping_client *client, struct sockaddr_in *sockaddr, char *add
 	client->rtt.average = 0;
 	client->rtt.mdev = 0;
 	client->rtt.total = 0;
-	client->rtt.total_sq = 0;
+	client->rtt.delta = 0;
 
-	return (0);
+	client->start_time = malloc(sizeof(struct timeval));
+	gettimeofday(client->start_time, NULL);
+
+	// client->send_time = malloc(sizeof(struct timeval));
+	client->recv_time = malloc(sizeof(struct timeval));
+
+	return (SUCCESS);
 }
 
-void update_time_stats(t_rtt *rtt, double new_rtt) {
+void update_time_stats(t_rtt *rtt, double new_rtt, int count) {
 	if (rtt->min == -1 || new_rtt < rtt->min) {
 		rtt->min = new_rtt;
 	}
+	
 	if (rtt->max == -1 || new_rtt > rtt->max) {
 		rtt->max = new_rtt;
 	}
+
 	rtt->total += new_rtt;
-	rtt->total_sq += new_rtt * new_rtt;
+	double delta = new_rtt - rtt->average;
+	rtt->average += delta / count;
+	rtt->delta += delta * (new_rtt - rtt->average);
 }
