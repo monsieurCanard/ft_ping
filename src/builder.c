@@ -1,19 +1,4 @@
-
-#include <netinet/ip_icmp.h>
-#include <stdio.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/ip_icmp.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-
-#include "../includes/client.h"
+#include "../includes/ping.h"
 
 int icmp_checksum(unsigned char* buff, int len) {
 	const uint16_t* data = (uint16_t*)buff;
@@ -22,7 +7,7 @@ int icmp_checksum(unsigned char* buff, int len) {
 	// Le checksum est la somme de tout les mots de 16 bits
 	// On additionne tout les bits du paquet mais 2 par 2 pour correspondre a la norme ICMP 
 	while(len > 1) {
-		sum += *data++;
+		sum += ntohs(*data++);
 		len -= 2;
 	}
 
@@ -41,7 +26,7 @@ int icmp_checksum(unsigned char* buff, int len) {
 	}
 		// Le checksum ICMP est defini comme le complement a un de la sommes
 		// Le complement consiste a inverser tous les bits
-		return (uint16_t)(~sum);
+		return htons(~sum);
 }
 
 int build_echo_request(unsigned char* buff, int seq) {
@@ -72,7 +57,7 @@ int build_echo_request(unsigned char* buff, int seq) {
 
 	// Numero de sequence du paquet
 	// Si je devais envoyer plusieurs ping je pourrai incrementer cette valeur
-	icmph->un.echo.sequence = seq;
+	icmph->un.echo.sequence = htons(seq);
 
 
 	// On remplit le payload avec un timestamp

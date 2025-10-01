@@ -2,6 +2,8 @@
 	"peacock.color": "#007fff",
 	"files.associations": {
 		"time.h": "c",
-		"client.h": "c"
+		"client.h": "c",
+		"signal.h": "c",
+		"ping.h": "c"
 	}
 }

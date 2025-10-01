@@ -14,7 +14,7 @@ all: $(NAME)
 
 $(NAME): $(OBJ)
 	@echo "Linking..."
-	@gcc $(CC_FLAGS) -o $@ $^
+	@gcc $(CC_FLAGS) -o $@ $^ -lm
 	@echo "$(NAME) compiled successfully!"
 
 $(OBJ_DIR):

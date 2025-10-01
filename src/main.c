@@ -1,144 +1,141 @@
-#include <stdio.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/ip_icmp.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-#include <netinet/ip.h>
+#include "../includes/ping.h"
+
+static t_ping_client client; 
+
+void handle_sigint(int sig) {
+	(void)sig;
+
+	struct timeval end_time;
+	gettimeofday(&end_time, NULL);
+	double total_time = (end_time.tv_sec - client.start_time->tv_sec) * 1000.0 +
+						(end_time.tv_usec - client.start_time->tv_usec) / 1000.0;
 
 
-#include "../includes/client.h"
+	client.rtt.average = client.rtt.total / client.counter.received;
+	client.rtt.mdev = sqrt(client.rtt.total_sq / client.counter.received - client.rtt.average * client.rtt.average);
+
+	// (void)total_time;
+	printf("\n--- %s ping statistics ---\n", client.infos->h_name);
+	printf("%d packets transmitted, %d received, %.1f%% packet loss, time %.0f ms\n",
+		client.counter.transmitted,
+		client.counter.received,
+		client.counter.transmitted == 0 ? 0.0 : ((client.counter.transmitted - client.counter.received) / (double)client.counter.transmitted) * 100.0,
+		total_time);
 
 
-void handle_sigint() {
-	//TODO: Ici on affichera les stats avant de quitter
-	printf("Stop process");
+	if (client.counter.received > 0) {
+		// client.rtt.mdev = client.rtt.total / client.counter.received;
+		printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
+			client.rtt.min,
+			client.rtt.average,
+			client.rtt.max,
+			client.rtt.mdev);
+	}
 	exit(0);
 }
 
 int main(int ac, char **av) {
+	
 	if (ac != 2) {
-		printf("Wrong number of argument: Actual %d -> Need 1. Usage ./ft_ping [adresse]", ac - 1);
+		printf("Wrong number of argument: Actual %d -> Need 1. Usage ./ft_ping [hostname/ip]", ac - 1);
 		return (1);
 	}
 
 	signal(SIGINT, handle_sigint);
-	t_client client;
-
-	// ft_ping 8.8.8.8
-	// ft_ping google.com
-	// ft_ping www.google.com
-
-	client.infos = gethostbyname(av[1]);
-	if(!client.infos) {
-		printf("ft_ping handle IPv4 adress and nothing else !\n");
-		return (1);
-	}
-
-	client.ip = inet_ntoa(*(struct in_addr*)client.infos->h_addr_list[0]);
-
-	// printf("Adress ip du hostname : %s", client.ip);
-	// printf("Arg %s\n", av[1]);
-	
-	
-	client._fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-	if(client._fd < 0) {
-		perror("Creation Socket");
-		exit(1);
-	}
-
 	struct sockaddr_in sockaddr;
-	memset(&sockaddr, 0, sizeof(sockaddr));
-
-	sockaddr.sin_family = AF_INET;
-	sockaddr.sin_port   = 0; // ICMP does not use ports, set to 0
-
-
-	if(inet_aton(client.ip, &sockaddr.sin_addr) < 0)
-	{
-		perror("Inet_aton ");
-		return (1);
+	
+	// memset(client, 0, sizeof(t_ping_client));
+	int ret = create_client(&client, &sockaddr, av[1]);
+	if (ret == ERROR) {
+		return (ret);
 	}
 
-	int seq = 1;
+	client.start_time = malloc(sizeof(struct timeval));
+	gettimeofday(client.start_time, NULL);
 	unsigned char buff[8 + PAYLOAD_SIZE];
 	printf("PING %s (%s) %d bytes of data.\n", av[1], client.ip, PAYLOAD_SIZE);
-	
+
 	while(1) {
-		
-		int payload_size = build_echo_request(buff, seq);
+		client.seq++;
+		int payload_size = build_echo_request(buff, client.seq);
 
 		sendto(client._fd, buff, payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
+		client.counter.transmitted++;
 		
 		socklen_t addrlen = sizeof(sockaddr);
-		recvfrom(client._fd, buff, payload_size, 0, (struct sockaddr*)&sockaddr, &addrlen);
+		ret = recvfrom(client._fd, buff, payload_size, 0, (struct sockaddr*)&sockaddr, &addrlen);
+		struct timeval recv_time;
+		gettimeofday(&recv_time, NULL);
+		
+
+		
+		if(ret == ERROR) {
+			
+			if(errno == EAGAIN || errno == EWOULDBLOCK) {
+				printf("Request timeout for icmp_seq %d\n", client.seq);
+				client.counter.lost++;
+				continue;
+			} else {
+				perror("Recvfrom ");
+				return (1);
+			}
+		}
 
 		// Buff contient tout le paquet IP recu
 		// On doit sauter l'entete IP pour acceder a l'entete ICMP
 		// La taille de l'entete IP est variable, on recupere sa taille
 		// dans les 4 premiers bits de l'entete IP
 		struct iphdr* ip = (struct iphdr*)buff;
+		int ttl = ip->ttl;
 
 		// Taille de l'entete IP en octets
 		int ip_header_len = ip->ihl * 4;
 
 		// On recupere l'entete ICMP
 		struct icmphdr* icmp = (struct icmphdr*)(buff + ip_header_len);
-		// int icmp_header_len = sizeof(struct icmphdr);
-		
 		//Verification du checksum
-		// On copie l'entete ICMP dans un buffer temporaire pour recalculer le checksum
 		// On met a 0 le champ checksum avant de le recalculer
+
 		unsigned char icmp_buf[8 + PAYLOAD_SIZE];
 		memcpy(icmp_buf, icmp, 8 + PAYLOAD_SIZE);
+		
+		uint16_t original_checksum = icmp->checksum;
+		uint16_t recv_seq = ntohs(icmp->un.echo.sequence);
+		
+		struct timeval *sent_time = (struct timeval *)(icmp_buf + 8);
+		float rtt = (recv_time.tv_sec - sent_time->tv_sec) * 1000.0 +
+								(recv_time.tv_usec - sent_time->tv_usec) / 1000.0;
+
+
+		
 		struct icmphdr* icmp_check = (struct icmphdr*)icmp_buf;
 		icmp_check->checksum = 0;
+		
 		uint16_t recv_checksum = icmp_checksum((unsigned char*)icmp_check, 8 + PAYLOAD_SIZE);
 
-
-		if(recv_checksum != icmp->checksum) {
-			printf("Received ICMP packet with invalid checksum: %d\n", icmp->checksum);
+		if(recv_checksum != original_checksum || icmp->type != ICMP_ECHOREPLY || recv_seq > client.seq || ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF) || icmp->code != 0 || ip->saddr != *(uint32_t*)client.infos->h_addr_list[0]) {
+			printf("Received invalid ICMP packet\n");
+			client.counter.lost++;
 			continue;
 		}
+			
+		client.counter.received++;
 
-		if(icmp->type != ICMP_ECHOREPLY) {
-			printf("Received ICMP packet with unexpected type: %d\n", icmp->type);
-			continue;
-		}
+		struct in_addr addr;
+		addr.s_addr = ip->saddr;
+		struct hostent *host = gethostbyaddr(&addr, sizeof(addr), AF_INET);
+		if (host)
+				printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d rtt=%.2f ms\n",
+						PAYLOAD_SIZE, host->h_name, inet_ntoa(addr),
+						ntohs(icmp->un.echo.sequence), ttl, rtt);
+		else
+				printf("%d bytes from %s: icmp_seq=%d ttl=%d rtt=%.2f ms\n",
+						PAYLOAD_SIZE, inet_ntoa(addr),
+						ntohs(icmp->un.echo.sequence), ttl, rtt);
 
-		// if (ntohs(icmp->un.echo.sequence) != seq) {
-		// 	printf("Received ICMP packet with unexpected sequence number: %d\n", ntohs(icmp->un.echo.sequence));
-		// 	continue;
-		// }
-
-		if (ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF)) {
-			printf("Received ICMP packet with unexpected identifier: %d\n", ntohs(icmp->un.echo.id));
-			continue;
-		}
-
-
-		if(icmp->code != 0) {
-			printf("Received ICMP packet with unexpected code: %d\n", icmp->code);
-			continue;
-		}
-
-		if (ip->saddr != *(uint32_t*)client.infos->h_addr_list[0]) {
-			printf("Received ICMP packet from unexpected source: %s\n", inet_ntoa(*(struct in_addr*)&ip->saddr));
-			continue;
-		}
-
-		int ttl = ip->ttl;
-		printf("%d bytes from %s: icmp_seq=%d ttl=%d\n", PAYLOAD_SIZE, client.ip, seq, ttl);
-
-		sleep(1);
-		
-		seq++;
+			update_time_stats(&client.rtt, rtt);
+			sleep(1);
+			
 	}
 	return 0;
 }
