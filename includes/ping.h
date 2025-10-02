@@ -1,63 +1,81 @@
-#include <stdio.h>
-#include <stdio.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
 #include <errno.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-#include <netinet/ip.h>
 #include <math.h>
+#include <netdb.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 #define PAYLOAD_SIZE 56
-#define TIMEOUT_SEC 1
+
+// Timeout for each ping reply
+#define TIMEOUT_SEC  1
 #define TIMEOUT_USEC 0
 
-#define ERROR -1
+// Pause between pings
+#define SECOND_PAUSE_BT_PINGS     1
+#define NANOSECOND_PAUSE_BT_PINGS 0
+
+#define ERROR   -1
 #define SUCCESS 0
 
+typedef struct rtt
+{
+    double min;
+    double max;
+    double average;
+    double mdev;
 
-typedef struct rtt {
-	double min;
-	double max;
-	double average;
-	double mdev;
-
-	double total;
-	double delta;
+    double total;
+    double delta;
 } t_rtt;
 
-typedef struct counter {
-	int transmitted;
-	int received;
-	int lost;
+typedef struct counter
+{
+    int transmitted;
+    int received;
+    int error;
+    int lost;
 } t_counter;
 
-typedef struct ping_client {
+typedef struct ping_client
+{
+    int   fd;
+    char* ip;
+    int   seq;
+    int   status;
 
-	int 		_fd;
-	char* 	ip;
-	int 		seq;
-	
-	struct timeval *start_time;
-	struct timeval *send_time;
-	struct timeval *recv_time;
-	struct hostent* infos;
-	
-	t_rtt rtt;
-	t_counter counter;
+    struct timespec delay_bt_pings;
+    struct timeval* start_time;
+    struct timeval* send_time;
+    struct timeval* recv_time;
+    struct hostent* infos;
+
+    t_rtt     rtt;
+    t_counter counter;
 
 } t_ping_client;
 
-
-int create_client(t_ping_client *client, struct sockaddr_in *sockaddr, char *address);
+int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* address);
 
 int build_echo_request(unsigned char* buff, int seq);
+
 int icmp_checksum(unsigned char* buff, int len);
 
-void update_time_stats(t_rtt *rtt, double new_rtt, int count);
+void print_ping_infos(double total_time, double success_rate, double mdev);
+
+void update_time_stats(t_rtt* rtt, double new_rtt, int count);
+
+void print_ping_line(struct iphdr* ip, struct icmphdr* icmp, float rtt, int ttl);
+
+void main_loop_icmp(struct sockaddr_in sockaddr);
+
+void exit_program(int sig);
