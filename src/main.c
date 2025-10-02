@@ -40,8 +40,6 @@ void exit_program(int sig)
 
 int main(int ac, char** av)
 {
-<<<<<<< HEAD
-
     if (ac != 2)
     {
         fprintf(stderr,
@@ -67,32 +65,5 @@ int main(int ac, char** av)
 
     main_loop_icmp(sockaddr);
 
-=======
-    if (ac != 2)
-    {
-        fprintf(stderr,
-                "Wrong number of argument: Actual %d -> Need 1. Usage ./ft_ping [hostname/ip]",
-                ac - 1);
-        return (EXIT_FAILURE);
-    }
-
-    signal(SIGINT, exit_program);
-    struct sockaddr_in sockaddr;
-
-    int ret = create_client(&client, &sockaddr, av[1]);
-    if (ret == ERROR)
-    {
-        client.status = EXIT_FAILURE;
-        exit_program(0);
-    }
-
-    // 28 = 20 (IP header min) + 8 (ICMP header) (peut etre variable mais pour l'affichage initial
-    // on met 28)
-    printf(
-        "PING %s (%s) %d(%d) bytes of data.\n", av[1], client.ip, PAYLOAD_SIZE, PAYLOAD_SIZE + 28);
-
-    main_loop_icmp(sockaddr);
-
->>>>>>> a8c5a25 (Test for config)
     exit_program(0);
 }

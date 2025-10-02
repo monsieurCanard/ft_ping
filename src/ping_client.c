@@ -22,7 +22,11 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
     struct timeval timeout;
     timeout.tv_sec  = TIMEOUT_SEC;
     timeout.tv_usec = TIMEOUT_USEC;
-    setsockopt(client->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    if (setsockopt(client->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+    {
+        perror("Setsockopt options: ");
+        return (ERROR);
+    }
 
     // int ttl_value = 1;
     // setsockopt(client->fd, IPPROTO_IP, IP_TTL, &ttl_value, sizeof(ttl_value));

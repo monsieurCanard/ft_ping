@@ -105,7 +105,6 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
             }
             else
             {
-
                 // ! Reception valide de la reponse ICMP
                 client.counter.received++;
                 print_ping_line(ip, icmp, rtt, ttl);
