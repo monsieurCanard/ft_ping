@@ -1,5 +1,7 @@
 #include "../includes/ping.h"
 
+extern t_ping_client client;
+
 int icmp_checksum(unsigned char* buff, int len)
 {
     const uint16_t* data = (uint16_t*)buff;
@@ -75,6 +77,8 @@ int build_echo_request(unsigned char* buff, int seq)
     gettimeofday(&tv, NULL);
     memcpy(buff + 8, &tv, sizeof(tv));
 
+    client.packet[seq].send_time = tv;
+    client.packet[seq].received  = false;
     // On remplit le reste du payload avec des zeros
     for (int i = 8 + sizeof(tv); i < 8 + 56; ++i)
     {

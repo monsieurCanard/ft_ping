@@ -11,7 +11,6 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
     // Tant que le client est actif (fd > 0)
     while (client.fd > 0)
     {
-        int packet_received = 0;
         client.seq++;
 
         int payload_size = build_echo_request(buff, client.seq);
@@ -23,23 +22,25 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
 
         // ! Envoi de la requete ICMP
         sendto(client.fd, buff, payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
-        client.counter.transmitted++;
 
-        while (!packet_received)
+        client.counter.transmitted++;
+        bool packet_receive = false;
+        fprintf(stdout, "PING nb %d to %s\n", client.counter.transmitted, client.ip);
+        while (!packet_receive)
         {
             // ! Reception de la reponse ICMP
             socklen_t addrlen = sizeof(sockaddr);
             ret = recvfrom(client.fd, buff, payload_size, 0, (struct sockaddr*)&sockaddr, &addrlen);
 
             gettimeofday(client.recv_time, NULL);
-
             if (ret == ERROR)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
                 {
-                    fprintf(stderr, "Request timeout for icmp_seq %d\n", client.seq);
-                    client.counter.lost++;
-                    break;
+                    verify_packet(client.packet);
+                    // fprintf(stderr, "Request timeout for icmp_seq %d\n", client.seq);
+                    // client.counter.lost++;
+                    continue;
                 }
                 else
                 {
@@ -76,9 +77,28 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
             icmp_check->checksum       = 0;
             uint16_t recv_checksum = icmp_checksum((unsigned char*)icmp_check, 8 + PAYLOAD_SIZE);
 
+            if (ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF))
+            {
+                fprintf(stderr, "Packet ID does not match, ignoring packet.\n");
+                nanosleep(&client.delay_bt_pings, NULL);
+
+                continue;
+            }
+
+            if (client.packet[recv_seq].received == -1)
+            {
+                fprintf(stderr, "Late reply for icmp_seq %d (previously timed out)\n", recv_seq);
+                break;
+            }
+            else if (client.packet[recv_seq].received == true)
+            {
+                fprintf(stderr, "Duplicate reply for icmp_seq %d\n", recv_seq);
+                break;
+            }
+
             if (recv_checksum != original_checksum || icmp->type != ICMP_ECHOREPLY ||
-                recv_seq > client.seq || ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF) ||
-                icmp->code != 0 || ip->saddr != *(uint32_t*)client.infos->h_addr_list[0])
+                recv_seq > client.seq || icmp->code != 0 ||
+                ip->saddr != *(uint32_t*)client.infos->h_addr_list[0])
             {
                 if (icmp->type == ICMP_DEST_UNREACH)
                 {
@@ -88,7 +108,6 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
                             recv_seq);
 
                     client.counter.error++;
-                    packet_received = 1;
                 }
                 else if (icmp->type == ICMP_TIME_EXCEEDED)
                 {
@@ -96,7 +115,6 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
                         stderr, "From %s icmp_seq=%d Time to live exceeded\n", client.ip, recv_seq);
 
                     client.counter.error++;
-                    packet_received = 1;
                 }
                 else
                 {
@@ -107,9 +125,10 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
             {
                 // ! Reception valide de la reponse ICMP
                 client.counter.received++;
-                print_ping_line(ip, icmp, rtt, ttl);
+                client.packet[recv_seq].received = true;
+                print_ping_line(ip, icmp, rtt, ttl, client.packet);
                 update_time_stats(&client.rtt, rtt, client.counter.transmitted);
-                packet_received = 1;
+                packet_receive = true;
             }
         }
         nanosleep(&client.delay_bt_pings, NULL);

@@ -5,6 +5,7 @@
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,10 +16,11 @@
 #include <unistd.h>
 
 #define PAYLOAD_SIZE 56
+#define MAX_PINGS    1024
 
 // Timeout for each ping reply
-#define TIMEOUT_SEC  1
-#define TIMEOUT_USEC 0
+#define TIMEOUT_SEC  0
+#define TIMEOUT_USEC 10000
 
 // Pause between pings
 #define SECOND_PAUSE_BT_PINGS     1
@@ -46,8 +48,16 @@ typedef struct counter
     int lost;
 } t_counter;
 
+typedef struct icmp_packet
+{
+    struct timeval send_time;
+    int            received;
+} t_icmp_packet;
+
 typedef struct ping_client
 {
+    t_icmp_packet* packet;
+
     int   fd;
     char* ip;
     int   seq;
@@ -74,8 +84,11 @@ void print_ping_infos(double total_time, double success_rate, double mdev);
 
 void update_time_stats(t_rtt* rtt, double new_rtt, int count);
 
-void print_ping_line(struct iphdr* ip, struct icmphdr* icmp, float rtt, int ttl);
+void print_ping_line(
+    struct iphdr* ip, struct icmphdr* icmp, float rtt, int ttl, t_icmp_packet* packet);
 
 void main_loop_icmp(struct sockaddr_in sockaddr);
+
+void verify_packet(t_icmp_packet* packet);
 
 void exit_program(int sig);

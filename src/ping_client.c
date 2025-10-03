@@ -18,7 +18,7 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
         return (ERROR);
     }
 
-    // Gestion du timeout sur la reception
+    // // Gestion du timeout sur la reception
     struct timeval timeout;
     timeout.tv_sec  = TIMEOUT_SEC;
     timeout.tv_usec = TIMEOUT_USEC;
@@ -68,6 +68,13 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
         return (ERROR);
     }
 
+    client->packet = malloc(sizeof(t_icmp_packet) * MAX_PINGS);
+    if (!client->packet)
+    {
+        perror("Malloc: ");
+        return (ERROR);
+    }
+    memset(client->packet, 0, sizeof(t_icmp_packet) * MAX_PINGS);
     return (SUCCESS);
 }
 

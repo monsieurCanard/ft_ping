@@ -1,6 +1,6 @@
 #include "../includes/ping.h"
 
-t_ping_client client;
+t_ping_client client = {0};
 
 void exit_program(int sig)
 {
