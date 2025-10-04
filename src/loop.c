@@ -7,8 +7,6 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
     unsigned char buff[8 + PAYLOAD_SIZE];
     int           ret;
 
-    // Boucle principale d'envoi et de reception des paquets ICMP
-    // Tant que le client est actif (fd > 0)
     while (client.fd > 0)
     {
         client.seq++;
@@ -38,8 +36,6 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
                 {
                     verify_packet(client.packet);
-                    // fprintf(stderr, "Request timeout for icmp_seq %d\n", client.seq);
-                    // client.counter.lost++;
                     continue;
                 }
                 else
@@ -49,8 +45,8 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
                     exit_program(0);
                 }
             }
-            //! Verification de la reponse ICMP
 
+            //! Verification de la reponse ICMP
             // buff contient tout le paquet IP recu
             // On doit sauter l'entete IP pour acceder a l'entete ICMP
             // La taille de l'entete IP est variable, on recupere sa taille
@@ -75,13 +71,12 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
 
             struct icmphdr* icmp_check = (struct icmphdr*)icmp_buf;
             icmp_check->checksum       = 0;
+
             uint16_t recv_checksum = icmp_checksum((unsigned char*)icmp_check, 8 + PAYLOAD_SIZE);
 
             if (ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF))
             {
-                fprintf(stderr, "Packet ID does not match, ignoring packet.\n");
                 nanosleep(&client.delay_bt_pings, NULL);
-
                 continue;
             }
 
@@ -115,10 +110,6 @@ void main_loop_icmp(struct sockaddr_in sockaddr)
                         stderr, "From %s icmp_seq=%d Time to live exceeded\n", client.ip, recv_seq);
 
                     client.counter.error++;
-                }
-                else
-                {
-                    continue;
                 }
             }
             else
