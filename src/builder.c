@@ -35,7 +35,7 @@ int icmp_checksum(unsigned char* buff, int len)
     return htons(~sum);
 }
 
-int build_echo_request(unsigned char* buff, int seq)
+int build_echo_request(t_ping_client* client, unsigned char* buff)
 {
 
     struct icmphdr* icmph = (struct icmphdr*)buff;
@@ -64,7 +64,7 @@ int build_echo_request(unsigned char* buff, int seq)
 
     // Numero de sequence du paquet
     // Si je devais envoyer plusieurs ping je pourrai incrementer cette valeur
-    icmph->un.echo.sequence = htons(seq);
+    icmph->un.echo.sequence = htons(client->seq);
 
     // On remplit le payload avec un timestamp
     if (PAYLOAD_SIZE < sizeof(struct timeval))
@@ -77,8 +77,8 @@ int build_echo_request(unsigned char* buff, int seq)
     gettimeofday(&tv, NULL);
     memcpy(buff + 8, &tv, sizeof(tv));
 
-    client.packet[seq].send_time = tv;
-    client.packet[seq].received  = false;
+    client->packet[client->seq].send_time = tv;
+    client->packet[client->seq].received  = false;
     // On remplit le reste du payload avec des zeros
     for (int i = 8 + sizeof(tv); i < 8 + 56; ++i)
     {

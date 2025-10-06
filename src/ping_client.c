@@ -63,13 +63,6 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
     }
     gettimeofday(client->start_time, NULL);
 
-    client->recv_time = malloc(sizeof(struct timeval));
-    if (!client->recv_time)
-    {
-        perror("Malloc: ");
-        return (ERROR);
-    }
-
     client->packet = malloc(sizeof(t_icmp_packet) * MAX_PINGS);
     if (!client->packet)
     {

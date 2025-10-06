@@ -67,7 +67,6 @@ typedef struct ping_client
     struct timespec delay_bt_pings;
     struct timeval* start_time;
     struct timeval* send_time;
-    struct timeval* recv_time;
     struct hostent* infos;
 
     t_rtt     rtt;
@@ -77,19 +76,19 @@ typedef struct ping_client
 
 int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* address);
 
-int build_echo_request(unsigned char* buff, int seq);
+int build_echo_request(t_ping_client* client, unsigned char* buff);
 
 int icmp_checksum(unsigned char* buff, int len);
 
-void print_ping_infos(double total_time, double success_rate, double mdev);
+void print_ping_infos(t_ping_client* client, double total_time, double success_rate, double mdev);
 
 void update_time_stats(t_rtt* rtt, double new_rtt, int count);
 
 void print_ping_line(
     struct iphdr* ip, struct icmphdr* icmp, float rtt, int ttl, t_icmp_packet* packet);
 
-void main_loop_icmp(struct sockaddr_in sockaddr);
+void main_loop_icmp(t_ping_client* client, struct sockaddr_in sockaddr);
 
-void verify_packet(t_icmp_packet* packet);
+void verify_packet(t_ping_client* client);
 
-void exit_program(int sig);
+void exit_program(t_ping_client* client);

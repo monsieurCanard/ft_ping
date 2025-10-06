@@ -1,18 +1,16 @@
 #include "../includes/ping.h"
 
-extern t_ping_client client;
-
-void print_ping_infos(double total_time, double success_rate, double mdev)
+void print_ping_infos(t_ping_client* client, double total_time, double success_rate, double mdev)
 {
-    fprintf(stdout, "\n--- %s ping statistics ---\n", client.infos->h_name);
-    if (client.counter.error != 0)
+    fprintf(stdout, "\n--- %s ping statistics ---\n", client->infos->h_name);
+    if (client->counter.error != 0)
     {
         fprintf(
             stdout,
             "%d packets transmitted, %d received, +%d errors, %.1f%% packet loss, time %.0f ms\n",
-            client.counter.transmitted,
-            client.counter.received,
-            client.counter.error,
+            client->counter.transmitted,
+            client->counter.received,
+            client->counter.error,
             success_rate,
             total_time);
     }
@@ -20,26 +18,19 @@ void print_ping_infos(double total_time, double success_rate, double mdev)
     {
         fprintf(stdout,
                 "%d packets transmitted, %d received, %.1f%% packet loss, time %.0f ms\n",
-                client.counter.transmitted,
-                client.counter.received,
+                client->counter.transmitted,
+                client->counter.received,
                 success_rate,
                 total_time);
     }
-    if (client.counter.received > 0)
+    if (client->counter.received > 0)
     {
         fprintf(stdout,
                 "rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
-                client.rtt.min,
-                client.rtt.average,
-                client.rtt.max,
+                client->rtt.min,
+                client->rtt.average,
+                client->rtt.max,
                 mdev);
-        // (void)mdev;
-        // fprintf(stdout,
-        //         "rtt min/%.3f/%.3f/%.3f/%.3f ms\n",
-        //         client.rtt.min,
-        //         client.rtt.max,
-        //         client.rtt.average,
-        //         mdev);
     }
 }
 
