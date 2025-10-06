@@ -19,8 +19,8 @@
 #define MAX_PINGS    1024
 
 // Timeout for each ping reply
-#define TIMEOUT_SEC  0
-#define TIMEOUT_USEC 10000
+#define TIMEOUT_SEC  10
+#define TIMEOUT_USEC 0
 
 // Pause between pings
 #define SECOND_PAUSE_BT_PINGS     1
@@ -58,10 +58,11 @@ typedef struct ping_client
 {
     t_icmp_packet* packet;
 
-    int   fd;
-    char* ip;
-    int   seq;
-    int   status;
+    int      fd;
+    char*    ip;
+    uint32_t target_addr; // Adresse IP cible sauvegardée
+    int      seq;
+    int      status;
 
     struct timespec delay_bt_pings;
     struct timeval* start_time;

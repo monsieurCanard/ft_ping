@@ -5,7 +5,6 @@ extern t_ping_client client;
 void print_ping_infos(double total_time, double success_rate, double mdev)
 {
     fprintf(stdout, "\n--- %s ping statistics ---\n", client.infos->h_name);
-
     if (client.counter.error != 0)
     {
         fprintf(
@@ -34,13 +33,20 @@ void print_ping_infos(double total_time, double success_rate, double mdev)
                 client.rtt.average,
                 client.rtt.max,
                 mdev);
+        // (void)mdev;
+        // fprintf(stdout,
+        //         "rtt min/%.3f/%.3f/%.3f/%.3f ms\n",
+        //         client.rtt.min,
+        //         client.rtt.max,
+        //         client.rtt.average,
+        //         mdev);
     }
 }
 
 void print_ping_line(
     struct iphdr* ip, struct icmphdr* icmp, float rtt, int ttl, t_icmp_packet* packet)
 {
-    (void)packet;   
+    (void)packet;
     struct in_addr addr;
     addr.s_addr          = ip->saddr;
     struct hostent* host = gethostbyaddr(&addr, sizeof(addr), AF_INET);

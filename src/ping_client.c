@@ -10,6 +10,8 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
     }
 
     client->ip = inet_ntoa(*(struct in_addr*)client->infos->h_addr_list[0]);
+    // Sauvegarder l'adresse IP cible pour éviter les problèmes avec gethostbyname statique
+    client->target_addr = *(uint32_t*)client->infos->h_addr_list[0];
 
     client->fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (client->fd < 0)
@@ -18,7 +20,7 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
         return (ERROR);
     }
 
-    // // Gestion du timeout sur la reception
+    // Gestion du timeout sur la reception
     struct timeval timeout;
     timeout.tv_sec  = TIMEOUT_SEC;
     timeout.tv_usec = TIMEOUT_USEC;
@@ -91,6 +93,7 @@ void update_time_stats(t_rtt* rtt, double new_rtt, int count)
     }
 
     rtt->total += new_rtt;
+
     double delta = new_rtt - rtt->average;
     rtt->average += delta / count;
     rtt->delta += delta * (new_rtt - rtt->average);

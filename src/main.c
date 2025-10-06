@@ -34,8 +34,10 @@ void exit_program(int sig)
 
     if (client.fd >= 0)
         close(client.fd);
+    if (client.packet)
+        free(client.packet);
 
-    exit(client.status);
+    exit(0);
 }
 
 int main(int ac, char** av)
