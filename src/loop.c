@@ -79,7 +79,7 @@ void main_loop_icmp(t_ping_client* client, struct sockaddr_in sockaddr)
         struct icmphdr* icmp          = (struct icmphdr*)(buff + ip_header_len);
         if (ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF))
         {
-            fprintf(stderr, "Received packet with unknown ID %d\n", ntohs(icmp->un.echo.id));
+            // fprintf(stderr, "Received packet with unknown ID %d\n", ntohs(icmp->un.echo.id));
             continue;
         }
 
@@ -104,6 +104,15 @@ void main_loop_icmp(t_ping_client* client, struct sockaddr_in sockaddr)
         else if (client->packet[recv_seq].received == true)
         {
             fprintf(stderr, "Duplicate reply for icmp_seq %d\n", recv_seq);
+        }
+        if (icmp->type != ICMP_ECHOREPLY)
+        {
+            fprintf(stdout,
+                    "From %s icmp_seq=%d type=%d code=%d\n",
+                    client->ip,
+                    recv_seq,
+                    icmp->type,
+                    icmp->code);
         }
 
         if (recv_checksum != original_checksum || icmp->type != ICMP_ECHOREPLY ||
