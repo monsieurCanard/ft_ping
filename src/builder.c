@@ -77,8 +77,8 @@ int build_echo_request(t_ping_client* client, unsigned char* buff)
     gettimeofday(&tv, NULL);
     memcpy(buff + 8, &tv, sizeof(tv));
 
-    client->packet[client->seq].send_time = tv;
-    client->packet[client->seq].received  = false;
+    // client->packet[client->seq].send_time = tv;
+    // client->packet[client->seq].received  = false;
     // On remplit le reste du payload avec des zeros
     for (int i = 8 + sizeof(tv); i < 8 + 56; ++i)
     {

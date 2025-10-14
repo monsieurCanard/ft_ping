@@ -1,8 +1,7 @@
 #include "../includes/ping.h"
 
-int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* address)
+static int resolve_host(t_ping_client* client, char* address)
 {
-
     struct addrinfo hints, *res;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_INET; // IPv4
@@ -15,19 +14,20 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
         return (ERROR);
     }
 
-    memcpy(sockaddr, res->ai_addr, sizeof(struct sockaddr_in));
+    memcpy(&client->sockaddr, res->ai_addr, sizeof(struct sockaddr_in));
     freeaddrinfo(res);
-    // client->infos = gethostbyname(address);
-    // if (!client->infos)
-    // {
-    //     fprintf(stderr, "Could not resolve hostname %s\n", address);
-    //     return (ERROR);
-    // }
 
-    client->ip = inet_ntoa(sockaddr->sin_addr);
-    // Sauvegarder l'adresse IP cible pour éviter les problèmes avec gethostbyname statique
-    client->target_addr = sockaddr->sin_addr.s_addr;
+    // Convertir l'adresse IP en chaîne de caractères pour l'affichage
+    client->ip = inet_ntoa(client->sockaddr.sin_addr);
 
+    // Sauvegarder l'adresse IP binaire pour les comparaisons
+    client->target_addr = client->sockaddr.sin_addr.s_addr;
+
+    return (SUCCESS);
+}
+
+static int create_socket(t_ping_client* client)
+{
     client->fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (client->fd < 0)
     {
@@ -48,14 +48,21 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
     // int ttl_value = 1;
     // setsockopt(client->fd, IPPROTO_IP, IP_TTL, &ttl_value, sizeof(ttl_value));
 
+    return (SUCCESS);
+}
+
+int create_client(t_ping_client* client, char* address)
+{
+
+    if (resolve_host(client, address) == ERROR)
+        return (ERROR);
+
+    if (create_socket(client) == ERROR)
+        return (ERROR);
+
     // Initialisation du delai entre chaque ping
     client->delay_bt_pings.tv_sec  = SECOND_PAUSE_BT_PINGS;
     client->delay_bt_pings.tv_nsec = NANOSECOND_PAUSE_BT_PINGS;
-
-    // memset(sockaddr, 0, sizeof(*sockaddr));
-    // sockaddr->sin_family      = AF_INET;
-    // sockaddr->sin_port        = 0;
-    // sockaddr->sin_addr.s_addr = inet_addr(client->ip);
 
     client->seq                 = 0;
     client->counter.transmitted = 0;
@@ -88,7 +95,7 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
     return (SUCCESS);
 }
 
-void update_time_stats(t_rtt* rtt, double new_rtt, int count)
+void update_client_time_stats(t_rtt* rtt, double new_rtt, int count)
 {
     if (rtt->min == -1 || new_rtt < rtt->min)
     {

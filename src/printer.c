@@ -49,3 +49,14 @@ void print_ping_line(
            ttl,
            rtt);
 }
+
+void print_helper()
+{
+    printf("Usage: ./ft_ping [options] <destination>\n");
+    printf("Options:\n");
+    printf("  -f, --flood       Flood mode: send packets as fast as possible\n");
+    printf("  -h, --help        Display this help message and exit\n");
+    printf("\nExample:\n");
+    printf("  sudo ./ft_ping --flood [hostname/ip]\n");
+    printf("\nNote: This program requires root privileges to run.\n");
+}
