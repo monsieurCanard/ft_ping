@@ -2,16 +2,31 @@
 
 int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* address)
 {
-    client->infos = gethostbyname(address);
-    if (!client->infos)
+
+    struct addrinfo hints, *res;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_INET; // IPv4
+    hints.ai_socktype = SOCK_RAW;
+
+    int status = getaddrinfo(address, NULL, &hints, &res);
+    if (status != 0)
     {
-        fprintf(stderr, "Could not resolve hostname %s\n", address);
+        fprintf(stderr, "Could not resolve hostname %s: %s\n", address, gai_strerror(status));
         return (ERROR);
     }
 
-    client->ip = inet_ntoa(*(struct in_addr*)client->infos->h_addr_list[0]);
+    memcpy(sockaddr, res->ai_addr, sizeof(struct sockaddr_in));
+    freeaddrinfo(res);
+    // client->infos = gethostbyname(address);
+    // if (!client->infos)
+    // {
+    //     fprintf(stderr, "Could not resolve hostname %s\n", address);
+    //     return (ERROR);
+    // }
+
+    client->ip = inet_ntoa(sockaddr->sin_addr);
     // Sauvegarder l'adresse IP cible pour éviter les problèmes avec gethostbyname statique
-    client->target_addr = *(uint32_t*)client->infos->h_addr_list[0];
+    client->target_addr = sockaddr->sin_addr.s_addr;
 
     client->fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (client->fd < 0)
@@ -37,10 +52,10 @@ int create_client(t_ping_client* client, struct sockaddr_in* sockaddr, char* add
     client->delay_bt_pings.tv_sec  = SECOND_PAUSE_BT_PINGS;
     client->delay_bt_pings.tv_nsec = NANOSECOND_PAUSE_BT_PINGS;
 
-    memset(sockaddr, 0, sizeof(*sockaddr));
-    sockaddr->sin_family      = AF_INET;
-    sockaddr->sin_port        = 0;
-    sockaddr->sin_addr.s_addr = inet_addr(client->ip);
+    // memset(sockaddr, 0, sizeof(*sockaddr));
+    // sockaddr->sin_family      = AF_INET;
+    // sockaddr->sin_port        = 0;
+    // sockaddr->sin_addr.s_addr = inet_addr(client->ip);
 
     client->seq                 = 0;
     client->counter.transmitted = 0;

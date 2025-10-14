@@ -14,6 +14,8 @@ void exit_program(t_ping_client* client)
     {
         struct timeval end_time;
         gettimeofday(&end_time, NULL);
+        client->counter.transmitted =
+            client->counter.received + client->counter.lost + client->counter.error;
 
         double total_time = (end_time.tv_sec - client->start_time->tv_sec) * 1000.0 +
                             (end_time.tv_usec - client->start_time->tv_usec) / 1000.0;

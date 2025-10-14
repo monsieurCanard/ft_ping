@@ -19,7 +19,7 @@
 #define MAX_PINGS    1024
 
 // Timeout for each ping reply
-#define TIMEOUT_SEC  10
+#define TIMEOUT_SEC  1
 #define TIMEOUT_USEC 0
 
 // Pause between pings

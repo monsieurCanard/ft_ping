@@ -2,7 +2,7 @@
 
 void print_ping_infos(t_ping_client* client, double total_time, double success_rate, double mdev)
 {
-    fprintf(stdout, "\n--- %s ping statistics ---\n", client->infos->h_name);
+    fprintf(stdout, "\n--- %s ping statistics ---\n", client->ip);
     if (client->counter.error != 0)
     {
         fprintf(
