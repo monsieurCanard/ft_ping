@@ -43,6 +43,7 @@ void print_ping_line(
     struct iphdr* ip, struct icmphdr* icmp, float rtt, int ttl, t_icmp_packet* packet)
 {
     (void)packet;
+
     struct in_addr addr;
     addr.s_addr          = ip->saddr;
     struct hostent* host = gethostbyaddr(&addr, sizeof(addr), AF_INET);

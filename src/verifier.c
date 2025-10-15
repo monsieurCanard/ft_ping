@@ -13,7 +13,6 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
     // On recupere l'entete ICMP
     int             ip_header_len = ip->ihl * 4;
     struct icmphdr* icmp          = (struct icmphdr*)(recv_buff + ip_header_len);
-    fprintf(stdout, "icmp->type: %d\n", icmp->type);
 
     if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP_DEST_UNREACH)
     {
@@ -88,7 +87,6 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
     if (recv_checksum != original_checksum || icmp->type != ICMP_ECHOREPLY ||
         recv_seq > client->seq || icmp->code != 0 || ip->saddr != client->target_addr)
     {
-        fprintf(stderr, "Invalid ICMP packet\n");
         if (client->args.verbose)
             fprintf(stderr,
                     "From %s icmp_seq=%d type=%d code=%d\n",
@@ -108,23 +106,12 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
     }
 
     client->packet[recv_seq].received = true;
-    print_ping_line(ip, icmp, new_rtt, ttl, client->packet);
+    if (client->args.flood)
+        write(1, " ", 1);
+    else
+        print_ping_line(ip, icmp, new_rtt, ttl, client->packet);
+
     update_client_time_stats(&client->rtt, new_rtt, client->counter.transmitted);
 
     return (new_rtt);
 }
-
-@theme{--color - primary #4F46E5;
---color - primary - dark #2a292cff;
-}
-
-<div class="flex flex-col">
-<select class="mb-4 p-2 border border-gray-300 rounded">
-  <option value="c">C</option>
-  <option value="cpp">C++</option>
-  <option value="python">Python</option>
-  <option value="java">Java</option>
-  <option value="javascript">JavaScript</option>
-  <option value="go">Go</option>
-  <option value="rust">Rust</option>
-  

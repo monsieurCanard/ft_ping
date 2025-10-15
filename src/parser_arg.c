@@ -4,14 +4,8 @@ int parse_args(int ac, char** av, t_ping_client* client)
 {
     struct option long_options[] = {
         {"verbose", no_argument, 0, 'v'},
-        // Flood ping. Outputs packets as fast as they come back or one hundred times per second,
-        // whichever is more. For every ECHO_REQUEST sent a period "." is printed, while for every
-        // ECHO_REPLY received a backspace is printed. This provides a rapid display of how many
-        // packets are being dropped. Only the super-user may use this option. This can be very hard
-        // on a network and should be used with caution.
         {"flood", no_argument, 0, 'f'},
         {"help", no_argument, 0, '?'},
-
         {"ttl", required_argument, 0, 't'},      // Set N as the packet time-to-live.
         {"interval", required_argument, 0, 'i'}, // Définit l'intervalle entre les pings
         {"count", required_argument, 0, 'c'},    // Nombre de pings à envoyer
@@ -21,7 +15,8 @@ int parse_args(int ac, char** av, t_ping_client* client)
     };
 
     int opt;
-    while ((opt = getopt_long(ac, av, "::fh::t:i:c:W:v", long_options, NULL)) != -1)
+    opterr = 0;
+    while ((opt = getopt_long(ac, av, "::f?h::t:i:c:W:v", long_options, NULL)) != -1)
     {
         switch (opt)
         {
@@ -33,13 +28,21 @@ int parse_args(int ac, char** av, t_ping_client* client)
             if (client->args.interval != 0)
             {
                 print_error("-f and -i incompatible options\n");
-                return (EXIT_FAILURE);
+                return (ERROR);
             }
             client->args.flood = true;
             break;
         case '?':
+            if (optopt != 0)
+            {
+                if (optopt == 't' || optopt == 'i' || optopt == 'c' || optopt == 'W')
+                    fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+                else
+                    fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+                return (ERROR);
+            }
             print_helper();
-            return (EXIT_SUCCESS);
+            return (ERROR);
         case 't':
             // Définir le TTL
             client->args.ttl = atoi(optarg);
@@ -47,38 +50,35 @@ int parse_args(int ac, char** av, t_ping_client* client)
         case 'i':
             if (client->args.flood == true)
             {
-                print_error("-f and -i incompatible options\n");
-                return (EXIT_FAILURE);
+                fprintf(stderr, "ping: -f and -i incompatible options\n");
+                return (ERROR);
             }
             client->args.interval = atoi(optarg); // en secondes
             if (client->args.interval < 0)
             {
-                print_error("invalid interval\n");
-                return (EXIT_FAILURE);
+                fprintf(stderr, "ping: invalid interval %s\n", optarg);
+                return (ERROR);
             }
             break;
         case 'c':
             client->args.count = atoi(optarg);
             if (client->args.count <= 0)
             {
-                print_error("invalid count of packets to transmit\n");
-                return (EXIT_FAILURE);
+                fprintf(stderr, "ping: bad number of packets to transmit.\n");
+                return (ERROR);
             }
             break;
         case 'W':
             client->args.timeout = atoi(optarg);
             if (client->args.timeout < 0)
             {
-                print_error("invalid timeout\n");
-                return (EXIT_FAILURE);
+                fprintf(stderr, "ping: invalid timeout %s\n", optarg);
+                return (ERROR);
             }
             break;
-        // case -1:
-        //     // Option inconnue
-        //     fprintf(stderr, "Unknown option: %s\n", av[optind - 1]);
         default:
             fprintf(stderr, "Unknown option: %c\n", opt);
-            return (EXIT_FAILURE);
+            return (ERROR);
         }
     }
     return (SUCCESS);

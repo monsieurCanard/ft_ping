@@ -18,6 +18,10 @@ void send_message(t_ping_client* client, struct sockaddr_in sockaddr)
 
     // ! Envoi de la requete ICMP
     sendto(client->fd, send_buff, payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
+
+    if (client->args.flood == true)
+        write(1, ".", 1);
+
     client->counter.transmitted++;
 }
 
@@ -33,7 +37,7 @@ void main_loop_icmp(t_ping_client* client)
         receive_packet = 0;
         send_message(client, client->sockaddr);
 
-        while (!receive_packet)
+        while (receive_packet == 0 && !g_exit_program)
         {
 
             // ! Reception de la reponse ICMP
@@ -41,7 +45,7 @@ void main_loop_icmp(t_ping_client* client)
             ret               = recvfrom(client->fd,
                            recv_buff,
                            sizeof(recv_buff),
-                           MSG_DONTWAIT,
+                           0,
                            (struct sockaddr*)&client->sockaddr,
                            &addrlen);
 
@@ -50,11 +54,12 @@ void main_loop_icmp(t_ping_client* client)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
                 {
-                    continue;
+                    if (client->args.verbose)
+                        fprintf(stderr, "Request timeout for icmp_seq %d\n", client->seq);
+                    client->packet[client->seq].received = -1;
+                    client->counter.lost++;
+                    break;
                 }
-
-                perror("Recvfrom: ");
-                client->status = EXIT_FAILURE;
                 exit_program(client);
             }
 
@@ -65,8 +70,14 @@ void main_loop_icmp(t_ping_client* client)
             }
             receive_packet = 1;
         }
-        usleep((client->delay_bt_pings.tv_sec * 1000000 + client->delay_bt_pings.tv_nsec / 1000) -
-               (new_rtt * 1000));
+        if (client->args.flood == false && !g_exit_program)
+            usleep(
+                (client->delay_bt_pings.tv_sec * 1000000 + client->delay_bt_pings.tv_nsec / 1000) -
+                (new_rtt * 1000));
+
+        client->args.count--;
+        if (client->args.count == 0)
+            g_exit_program = true;
     }
     exit_program(client);
 }
