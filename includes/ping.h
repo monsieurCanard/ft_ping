@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <errno.h>
+#include <getopt.h>
 #include <math.h>
 #include <netdb.h>
 #include <netinet/ip.h>
@@ -40,6 +41,16 @@ typedef struct rtt
     double delta;
 } t_rtt;
 
+typedef struct args
+{
+    bool verbose;
+    bool flood;
+    int  ttl;
+    int  interval;
+    int  count;
+    int  timeout;
+} t_args;
+
 typedef struct counter
 {
     int transmitted;
@@ -56,6 +67,7 @@ typedef struct icmp_packet
 
 typedef struct ping_client
 {
+    t_args             args;
     struct sockaddr_in sockaddr;
     t_icmp_packet*     packet;
 
@@ -75,6 +87,8 @@ typedef struct ping_client
 
 } t_ping_client;
 
+int parse_args(int ac, char** av, t_ping_client* client);
+
 int create_client(t_ping_client* client, char* address);
 
 int build_echo_request(t_ping_client* client, unsigned char* buff);
@@ -90,8 +104,10 @@ void print_ping_line(
 
 void main_loop_icmp(t_ping_client* client);
 
-int verify_response(t_ping_client* client, unsigned char* buff, struct timeval recv_time);
+float verify_response(t_ping_client* client, unsigned char* buff, struct timeval recv_time);
 
 void exit_program(t_ping_client* client);
 
 void print_helper();
+
+void print_error(char* msg);

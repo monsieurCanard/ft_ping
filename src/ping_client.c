@@ -37,14 +37,23 @@ static int create_socket(t_ping_client* client)
 
     // Gestion du timeout sur la reception
     struct timeval timeout;
-    timeout.tv_sec  = TIMEOUT_SEC;
+    timeout.tv_sec  = (client->args.timeout != 0) ? client->args.timeout : TIMEOUT_SEC;
     timeout.tv_usec = TIMEOUT_USEC;
     if (setsockopt(client->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
     {
         perror("Setsockopt options: ");
         return (ERROR);
     }
-
+    fprintf(stdout, "ttl = %d\n", (client->args.ttl != 0) ? client->args.ttl : 64);
+    if (client->args.ttl != 0)
+    {
+        if (setsockopt(
+                client->fd, IPPROTO_IP, IP_TTL, &client->args.ttl, sizeof(client->args.ttl)) < 0)
+        {
+            perror("Setsockopt TTL: ");
+            return (ERROR);
+        }
+    }
     // int ttl_value = 1;
     // setsockopt(client->fd, IPPROTO_IP, IP_TTL, &ttl_value, sizeof(ttl_value));
 

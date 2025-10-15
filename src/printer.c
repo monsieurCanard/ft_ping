@@ -1,5 +1,10 @@
 #include "../includes/ping.h"
 
+void print_error(char* msg)
+{
+    fprintf(stderr, "ping: %s\n", msg);
+}
+
 void print_ping_infos(t_ping_client* client, double total_time, double success_rate, double mdev)
 {
     fprintf(stdout, "\n--- %s ping statistics ---\n", client->ip);

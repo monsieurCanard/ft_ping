@@ -1,4 +1,3 @@
-#include <getopt.h>
 
 #include "../includes/ping.h"
 
@@ -11,40 +10,12 @@ void set_exit_program(int sig)
 
 int main(int ac, char** av)
 {
-    struct option long_options[] = {
-        {"flood", no_argument, 0, 'f'}, // Envoi le plus rapidement possible
-        {"help", no_argument, 0, '?'},
-        {"ttl", required_argument, 0, 't'},      // Définit le TTL
-        {"interval", required_argument, 0, 'i'}, // Définit l'intervalle entre les pings
-        {0, 0, 0, 0}                             // Fin des options
-    };
-    int opt;
-    while ((opt = getopt_long(ac, av, "::f::h::t:", long_options, NULL)) != -1)
-    {
-        switch (opt)
-        {
-        case 'f':
-            fprintf(stdout, "Flood mode: enabled\nTarget: %s\n", av[1]);
-            // Activer le mode flood
-            break;
-        case '?':
-            print_helper();
-            return (EXIT_SUCCESS);
-        case 't':
-            // Définir le TTL
-            break;
-        case -1:
-            // Option inconnue
-            fprintf(stderr, "Unknown option: %s\n", av[optind - 1]);
-        default:
-            fprintf(stderr, "Unknown option: %c\n", opt);
-            return (EXIT_FAILURE);
-        }
-    };
+    t_ping_client client = {0};
+
+    if (parse_args(ac, av, &client) == ERROR)
+        return (EXIT_FAILURE);
 
     signal(SIGINT, set_exit_program);
-
-    t_ping_client client = {0};
 
     int ret = create_client(&client, av[optind]);
     if (ret == ERROR)

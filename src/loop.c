@@ -26,6 +26,7 @@ void main_loop_icmp(t_ping_client* client)
     unsigned char  recv_buff[8 + 20 + PAYLOAD_SIZE];
     int            receive_packet, ret = 0;
     struct timeval recv_time;
+    float          new_rtt;
 
     while (!g_exit_program)
     {
@@ -57,13 +58,15 @@ void main_loop_icmp(t_ping_client* client)
                 exit_program(client);
             }
 
-            if (verify_response(client, recv_buff, recv_time) == SUCCESS)
+            new_rtt = verify_response(client, recv_buff, recv_time);
+            if (new_rtt != ERROR)
             {
                 client->counter.received++;
-                receive_packet = 1;
             }
+            receive_packet = 1;
         }
-        nanosleep(&client->delay_bt_pings, NULL);
+        usleep((client->delay_bt_pings.tv_sec * 1000000 + client->delay_bt_pings.tv_nsec / 1000) -
+               (new_rtt * 1000));
     }
     exit_program(client);
 }
