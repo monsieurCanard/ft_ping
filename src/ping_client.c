@@ -98,6 +98,8 @@ int create_client(t_ping_client* client, char* address)
     client->rtt.delta           = 0;
     client->status              = EXIT_SUCCESS;
 
+    client->name = address;
+
     client->start_time = malloc(sizeof(struct timeval));
     if (!client->start_time)
     {

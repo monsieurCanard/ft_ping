@@ -49,7 +49,6 @@ void main_loop_icmp(t_ping_client* client)
                            (struct sockaddr*)&client->sockaddr,
                            &addrlen);
 
-            gettimeofday(&recv_time, NULL);
             if (ret == ERROR)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -62,6 +61,8 @@ void main_loop_icmp(t_ping_client* client)
                 }
                 exit_program(client);
             }
+
+            gettimeofday(&recv_time, NULL);
 
             new_rtt = verify_response(client, recv_buff, recv_time);
             if (new_rtt != ERROR)

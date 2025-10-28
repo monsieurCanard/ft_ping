@@ -7,31 +7,31 @@ void print_error(char* msg)
 
 void print_ping_infos(t_ping_client* client, double total_time, double success_rate, double mdev)
 {
+    // Voir avec JB pour l'affichage des statistiques
+    (void)total_time;
+
     fprintf(stdout, "\n--- %s ping statistics ---\n", client->ip);
     if (client->counter.error != 0)
     {
-        fprintf(
-            stdout,
-            "%d packets transmitted, %d received, +%d errors, %.1f%% packet loss, time %.0f ms\n",
-            client->counter.transmitted,
-            client->counter.received,
-            client->counter.error,
-            success_rate,
-            total_time);
+        fprintf(stdout,
+                "%d packets transmitted, %d packets received, +%d errors, %.1f%% packet loss\n",
+                client->counter.transmitted,
+                client->counter.received,
+                client->counter.error,
+                success_rate);
     }
     else
     {
         fprintf(stdout,
-                "%d packets transmitted, %d received, %.1f%% packet loss, time %.0f ms\n",
+                "%d packets transmitted, %d packets received, %.1f%% packet loss\n",
                 client->counter.transmitted,
                 client->counter.received,
-                success_rate,
-                total_time);
+                success_rate);
     }
     if (client->counter.received > 0)
     {
         fprintf(stdout,
-                "rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
+                "round-trip min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
                 client->rtt.min,
                 client->rtt.average,
                 client->rtt.max,

@@ -71,6 +71,7 @@ typedef struct ping_client
     struct sockaddr_in sockaddr;
     t_icmp_packet*     packet;
 
+    char*    name;
     int      fd;
     char*    ip;
     uint32_t target_addr;

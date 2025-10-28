@@ -27,7 +27,7 @@ int main(int ac, char** av)
     // 28 = 20 (IP header min) + 8 (ICMP header) (peut etre variable mais pour l'affichage initial
     // on met 28)
     printf("PING %s (%s) %d(%d) bytes of data.\n",
-           av[optind],
+           client.name,
            client.ip,
            PAYLOAD_SIZE,
            PAYLOAD_SIZE + 28);
