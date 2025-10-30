@@ -38,5 +38,6 @@ void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* cl
                 ntohs(icmp->un.echo.sequence),
                 icmp->type,
                 icmp->code);
+
     client->counter.error++;
 }

@@ -1,5 +1,7 @@
 {
 	"files.associations": {
-		"ping.h": "c"
+		"ping.h": "c",
+		"random": "c",
+		"limits": "c"
 	}
 }

@@ -16,13 +16,8 @@ void send_message(t_ping_client* client, struct sockaddr_in sockaddr)
         exit_program(client);
     }
 
-    gettimeofday(client->send_time, NULL);
-
     // ! Envoi de la requete ICMP
     sendto(client->fd, send_buff, payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
-
-    if (client->args.flood == true)
-        write(1, ".", 1);
 
     client->counter.transmitted++;
 }
@@ -65,16 +60,18 @@ void main_loop_icmp(t_ping_client* client)
 
             new_rtt = verify_response(client, recv_buff, recv_time);
 
-            if (new_rtt != ERROR)
+            if (new_rtt > 0)
             {
+                new_rtt *= -1;
                 client->counter.received++;
             }
+            receive_packet = 1;
         }
 
-        if (client->args.flood == false && !g_exit_program)
-            usleep(
-                (client->delay_bt_pings.tv_sec * 1000000 + client->delay_bt_pings.tv_nsec / 1000) -
-                (new_rtt * 1000));
+        double elapsed_time =
+            (client->delay_bt_pings.tv_sec * 1000.0 + client->delay_bt_pings.tv_nsec / 1000000.0) -
+            new_rtt;
+        usleep(elapsed_time * 1000);
 
         client->args.count--;
         if (client->args.count == 0)

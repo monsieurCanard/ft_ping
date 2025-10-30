@@ -37,22 +37,27 @@ static int create_socket(t_ping_client* client)
 
     // Gestion du timeout sur la reception
     struct timeval timeout;
-    if (client->args.flood == true)
-    {
-        timeout.tv_sec  = 0;
-        timeout.tv_usec = 0;
-    }
-    else
-    {
-        timeout.tv_sec  = (client->args.timeout != 0) ? client->args.timeout : TIMEOUT_SEC;
-        timeout.tv_usec = TIMEOUT_USEC;
-    }
+    timeout.tv_sec  = (client->args.timeout != 0) ? client->args.timeout : TIMEOUT_SEC;
+    timeout.tv_usec = TIMEOUT_USEC;
 
     if (setsockopt(client->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
     {
         perror("Setsockopt options: ");
         return (ERROR);
     }
+
+    // if (client->args.debug_level > 0)
+    // {
+    //     if (setsockopt(client->fd,
+    //                    SOL_SOCKET,
+    //                    SO_DEBUG,
+    //                    &client->args.debug_level,
+    //                    sizeof(client->args.debug_level)) < 0)
+    //     {
+    //         perror("Setsockopt debug: ");
+    //         return (ERROR);
+    //     }
+    // }
 
     fprintf(stdout, "timeout = %d sec, %d usec\n", (int)timeout.tv_sec, (int)timeout.tv_usec);
 
@@ -75,6 +80,8 @@ static int create_socket(t_ping_client* client)
 int create_client(t_ping_client* client, char* address)
 {
 
+    memset(client, 0, sizeof(t_ping_client));
+
     if (resolve_host(client, address) == ERROR)
         return (ERROR);
 
@@ -84,55 +91,37 @@ int create_client(t_ping_client* client, char* address)
     // Initialisation du delai entre chaque ping
     client->delay_bt_pings.tv_sec  = SECOND_PAUSE_BT_PINGS;
     client->delay_bt_pings.tv_nsec = NANOSECOND_PAUSE_BT_PINGS;
-
-    client->seq                 = 0;
-    client->counter.transmitted = 0;
-    client->counter.received    = 0;
-    client->counter.lost        = 0;
-    client->counter.error       = 0;
-    client->rtt.min             = -1;
-    client->rtt.max             = -1;
-    client->rtt.average         = 0;
-    client->rtt.mdev            = 0;
-    client->rtt.total           = 0;
-    client->rtt.delta           = 0;
-    client->status              = EXIT_SUCCESS;
+    client->time_stats.min         = -1;
+    client->time_stats.max         = -1;
+    client->status                 = EXIT_SUCCESS;
 
     client->name = address;
 
-    client->start_time = malloc(sizeof(struct timeval));
-    if (!client->start_time)
-    {
-        perror("Malloc: ");
-        return (ERROR);
-    }
-    gettimeofday(client->start_time, NULL);
-
-    client->packet = malloc(sizeof(t_icmp_packet) * MAX_PINGS);
+    client->packet = malloc(sizeof(t_icmp_packet) * 1024);
     if (!client->packet)
     {
         perror("Malloc: ");
         return (ERROR);
     }
-    memset(client->packet, 0, sizeof(t_icmp_packet) * MAX_PINGS);
+    memset(client->packet, 0, sizeof(t_icmp_packet) * 1024);
     return (SUCCESS);
 }
 
-void update_client_time_stats(t_rtt* rtt, double new_rtt, int count)
+void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int count)
 {
-    if (rtt->min == -1 || new_rtt < rtt->min)
+    if (time_stats->min == -1 || new_rtt < time_stats->min)
     {
-        rtt->min = new_rtt;
+        time_stats->min = new_rtt;
     }
 
-    if (rtt->max == -1 || new_rtt > rtt->max)
+    if (time_stats->max == -1 || new_rtt > time_stats->max)
     {
-        rtt->max = new_rtt;
+        time_stats->max = new_rtt;
     }
 
-    rtt->total += new_rtt;
+    time_stats->total += new_rtt;
 
-    double delta = new_rtt - rtt->average;
-    rtt->average += delta / count;
-    rtt->delta += delta * (new_rtt - rtt->average);
+    double delta = new_rtt - time_stats->average;
+    time_stats->average += delta / count;
+    time_stats->delta += delta * (new_rtt - time_stats->average);
 }

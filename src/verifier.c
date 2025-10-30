@@ -32,10 +32,10 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
     uint16_t original_checksum = icmp->checksum;
     uint16_t recv_seq          = ntohs(icmp->un.echo.sequence);
 
-    client->send_time = (struct timeval*)(icmp_buf + 8);
+    struct timeval* send_time = (struct timeval*)(icmp_buf + 8);
 
-    float new_rtt = (recv_time.tv_sec - client->send_time->tv_sec) * 1000.0 +
-                    (recv_time.tv_usec - client->send_time->tv_usec) / 1000.0;
+    float rtt = (recv_time.tv_sec - send_time->tv_sec) * 1000.0 +
+                (recv_time.tv_usec - send_time->tv_usec) / 1000.0;
 
     struct icmphdr* icmp_check = (struct icmphdr*)icmp_buf;
     icmp_check->checksum       = 0;
@@ -46,14 +46,14 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
         if (client->args.verbose)
             fprintf(stderr, "Late reply for icmp_seq %d (previously timed out)\n", recv_seq);
         client->counter.error++;
-        return (ERROR);
+        return (-rtt);
     }
     else if (client->packet[recv_seq].received == true)
     {
         if (client->args.verbose)
             fprintf(stderr, "Duplicate reply for icmp_seq %d\n", recv_seq);
         client->counter.error++;
-        return (ERROR);
+        return (-rtt);
     }
 
     if (recv_checksum != original_checksum || recv_seq > client->seq || icmp->code != 0)
@@ -66,23 +66,20 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
                     icmp->type,
                     icmp->code);
         client->counter.error++;
-        return (SUCCESS);
+        return (-rtt);
     }
 
     if (ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF))
     {
         if (client->args.verbose)
             fprintf(stderr, "Received packet with unknown ID %d\n", ntohs(icmp->un.echo.id));
-        return (ERROR);
+        return (-rtt);
     }
 
     client->packet[recv_seq].received = true;
-    if (client->args.flood)
-        write(1, " ", 1);
-    else
-        print_ping_line(ip, icmp, new_rtt, ttl, client->packet);
+    print_ping_line(ip, icmp, rtt, ttl, client->packet);
 
-    update_client_time_stats(&client->rtt, new_rtt, client->counter.transmitted);
+    update_client_time_stats(&client->time_stats, rtt, client->counter.transmitted);
 
-    return (new_rtt);
+    return (rtt);
 }

@@ -4,9 +4,9 @@ int parse_args(int ac, char** av, t_ping_client* client)
 {
     struct option long_options[] = {
         {"verbose", no_argument, 0, 'v'},
-        {"type", required_argument, 0, 't'},
+        {"debug", required_argument, 0, 'd'},
         {"help", no_argument, 0, '?'},
-        {"ttl", required_argument, 0, 'ttl'},    // Set N as the packet time-to-live.
+        {"ttl", required_argument, 0, 't'},      // Set N as the packet time-to-live.
         {"interval", required_argument, 0, 'i'}, // Définit l'intervalle entre les pings
         {"count", required_argument, 0, 'c'},    // Nombre de pings à envoyer
         {"linger", required_argument, 0, 'W'},
@@ -16,16 +16,15 @@ int parse_args(int ac, char** av, t_ping_client* client)
 
     int opt;
     opterr = 0;
-    while ((opt = getopt_long(ac, av, "::f?h::t:i:c:W:v", long_options, NULL)) != -1)
+    while ((opt = getopt_long(ac, av, "::d?h::t:i:c:W:v", long_options, NULL)) != -1)
     {
         switch (opt)
         {
         case 'v':
             client->args.verbose = true;
             break;
-        case 't':
-            // TODO : Change type request
-            client->args.request_type = atoi(optarg);
+        case 'd':
+            client->args.debug_level = 1;
             break;
         case '?':
             if (optopt != 0)
@@ -38,7 +37,7 @@ int parse_args(int ac, char** av, t_ping_client* client)
             }
             print_helper();
             return (ERROR);
-        case 'ttl':
+        case 't':
             // Définir le TTL
             client->args.ttl = atoi(optarg);
             break;

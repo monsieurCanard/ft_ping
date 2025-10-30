@@ -5,12 +5,10 @@ void print_error(char* msg)
     fprintf(stderr, "ping: %s\n", msg);
 }
 
-void print_ping_infos(t_ping_client* client, double total_time, double success_rate, double mdev)
+void print_ping_infos(t_ping_client* client, double success_rate, double mdev)
 {
-    // Voir avec JB pour l'affichage des statistiques
-    (void)total_time;
-
     fprintf(stdout, "\n--- %s ping statistics ---\n", client->ip);
+
     if (client->counter.error != 0)
     {
         fprintf(stdout,
@@ -32,9 +30,9 @@ void print_ping_infos(t_ping_client* client, double total_time, double success_r
     {
         fprintf(stdout,
                 "round-trip min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
-                client->rtt.min,
-                client->rtt.average,
-                client->rtt.max,
+                client->time_stats.min,
+                client->time_stats.average,
+                client->time_stats.max,
                 mdev);
     }
 }
@@ -59,9 +57,13 @@ void print_helper()
 {
     printf("Usage: ./ft_ping [options] <destination>\n");
     printf("Options:\n");
-    printf("  -f, --flood       Flood mode: send packets as fast as possible\n");
+    printf("  -d, --debug       Enable debug mode\n");
+    printf("  -t, --ttl N      Set the packet time-to-live to N\n");
+    printf("  -i, --interval N  Set the interval between sending each packet to N seconds\n");
+    printf("  -c, --count N     Stop after sending N packets\n");
+    printf("  -W, --linger N    Set the time to wait for a response to N seconds\n");
     printf("  -h, --help        Display this help message and exit\n");
     printf("\nExample:\n");
-    printf("  sudo ./ft_ping --flood [hostname/ip]\n");
+    printf("sudo ./ft_ping [options] [hostname/ip]\n");
     printf("\nNote: This program requires root privileges to run.\n");
 }
