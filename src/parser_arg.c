@@ -4,9 +4,9 @@ int parse_args(int ac, char** av, t_ping_client* client)
 {
     struct option long_options[] = {
         {"verbose", no_argument, 0, 'v'},
-        {"flood", no_argument, 0, 'f'},
+        {"type", required_argument, 0, 't'},
         {"help", no_argument, 0, '?'},
-        {"ttl", required_argument, 0, 't'},      // Set N as the packet time-to-live.
+        {"ttl", required_argument, 0, 'ttl'},    // Set N as the packet time-to-live.
         {"interval", required_argument, 0, 'i'}, // Définit l'intervalle entre les pings
         {"count", required_argument, 0, 'c'},    // Nombre de pings à envoyer
         {"linger", required_argument, 0, 'W'},
@@ -23,14 +23,9 @@ int parse_args(int ac, char** av, t_ping_client* client)
         case 'v':
             client->args.verbose = true;
             break;
-        case 'f':
-            fprintf(stdout, "Flood mode: enabled\nTarget: %s\n", av[1]);
-            if (client->args.interval != 0)
-            {
-                print_error("-f and -i incompatible options\n");
-                return (ERROR);
-            }
-            client->args.flood = true;
+        case 't':
+            // TODO : Change type request
+            client->args.request_type = atoi(optarg);
             break;
         case '?':
             if (optopt != 0)
@@ -43,16 +38,11 @@ int parse_args(int ac, char** av, t_ping_client* client)
             }
             print_helper();
             return (ERROR);
-        case 't':
+        case 'ttl':
             // Définir le TTL
             client->args.ttl = atoi(optarg);
             break;
         case 'i':
-            if (client->args.flood == true)
-            {
-                fprintf(stderr, "ping: -f and -i incompatible options\n");
-                return (ERROR);
-            }
             client->args.interval = atoi(optarg); // en secondes
             if (client->args.interval < 0)
             {

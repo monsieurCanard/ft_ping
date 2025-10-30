@@ -45,11 +45,10 @@ void print_ping_line(
     (void)packet;
 
     struct in_addr addr;
-    addr.s_addr          = ip->saddr;
-    struct hostent* host = gethostbyaddr(&addr, sizeof(addr), AF_INET);
-    printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d rtt=%.2f ms\n",
+    addr.s_addr = ip->saddr;
+
+    printf("%d bytes from %s: icmp_seq=%d ttl=%d rtt=%.2f ms\n",
            PAYLOAD_SIZE + 8,
-           (host) ? host->h_name : inet_ntoa(addr),
            inet_ntoa(addr),
            ntohs(icmp->un.echo.sequence),
            ttl,

@@ -1,5 +1,10 @@
 #include "../includes/ping.h"
 
+static bool paquet_for_me(struct iphdr* ip, t_ping_client* client)
+{
+    return (ip->saddr == client->target_addr);
+}
+
 float verify_response(t_ping_client* client, unsigned char* recv_buff, struct timeval recv_time)
 {
     // buff contient tout le paquet IP recu
@@ -9,38 +14,15 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
     struct iphdr* ip  = (struct iphdr*)recv_buff;
     int           ttl = ip->ttl;
 
-    // Taille de l'entete IP en octets
-    // On recupere l'entete ICMP
     int             ip_header_len = ip->ihl * 4;
     struct icmphdr* icmp          = (struct icmphdr*)(recv_buff + ip_header_len);
 
-    if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP_DEST_UNREACH)
+    if (!paquet_for_me(ip, client))
+        return (ERROR);
+
+    if (icmp->type != ICMP_ECHOREPLY)
     {
-        /* the original IP header starts at icmp + 8 */
-        unsigned char*  inner     = (unsigned char*)icmp + 8;
-        struct iphdr*   orig_ip   = (struct iphdr*)inner;
-        int             orig_ihl  = orig_ip->ihl * 4;
-        struct icmphdr* orig_icmp = (struct icmphdr*)(inner + orig_ihl);
-        uint16_t        orig_seq  = ntohs(orig_icmp->un.echo.sequence);
-
-        if (icmp->type == ICMP_TIME_EXCEEDED)
-        {
-            if (client->args.verbose)
-                fprintf(stderr,
-                        "From %s icmp_seq=%d Time to live exceeded\n",
-                        inet_ntoa(*(struct in_addr*)&ip->saddr),
-                        orig_seq);
-        }
-        else /* DEST_UNREACH */
-        {
-            if (client->args.verbose)
-                fprintf(stderr,
-                        "From %s icmp_seq=%d Destination Unreachable\n",
-                        inet_ntoa(*(struct in_addr*)&ip->saddr),
-                        orig_seq);
-        }
-
-        client->counter.error++;
+        handle_error_icmp(icmp, ip, client);
         return (ERROR);
     }
 
@@ -50,19 +32,9 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
     uint16_t original_checksum = icmp->checksum;
     uint16_t recv_seq          = ntohs(icmp->un.echo.sequence);
 
-    if (recv_seq > client->seq)
-    {
-        if (client->args.verbose)
-            fprintf(stderr,
-                    "Out of order packet: icmp_seq %d (expected <= %d)\n",
-                    recv_seq,
-                    client->seq);
-        client->counter.error++;
-        return (ERROR);
-    }
-
     client->send_time = (struct timeval*)(icmp_buf + 8);
-    float new_rtt     = (recv_time.tv_sec - client->send_time->tv_sec) * 1000.0 +
+
+    float new_rtt = (recv_time.tv_sec - client->send_time->tv_sec) * 1000.0 +
                     (recv_time.tv_usec - client->send_time->tv_usec) / 1000.0;
 
     struct icmphdr* icmp_check = (struct icmphdr*)icmp_buf;
@@ -84,18 +56,17 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
         return (ERROR);
     }
 
-    if (recv_checksum != original_checksum || icmp->type != ICMP_ECHOREPLY ||
-        recv_seq > client->seq || icmp->code != 0 || ip->saddr != client->target_addr)
+    if (recv_checksum != original_checksum || recv_seq > client->seq || icmp->code != 0)
     {
         if (client->args.verbose)
             fprintf(stderr,
                     "From %s icmp_seq=%d type=%d code=%d\n",
-                    client->ip,
+                    inet_ntoa(*(struct in_addr*)&ip->saddr),
                     recv_seq,
                     icmp->type,
                     icmp->code);
         client->counter.error++;
-        return (ERROR);
+        return (SUCCESS);
     }
 
     if (ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF))

@@ -44,7 +44,7 @@ typedef struct rtt
 typedef struct args
 {
     bool verbose;
-    bool flood;
+    int  request_type;
     int  ttl;
     int  interval;
     int  count;
@@ -106,6 +106,8 @@ void print_ping_line(
 void main_loop_icmp(t_ping_client* client);
 
 float verify_response(t_ping_client* client, unsigned char* buff, struct timeval recv_time);
+
+void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* client);
 
 void exit_program(t_ping_client* client);
 
