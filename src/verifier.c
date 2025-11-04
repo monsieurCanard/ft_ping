@@ -1,8 +1,41 @@
 #include "../includes/ping.h"
 
+extern bool g_exit_program;
+
 static bool paquet_for_me(struct icmphdr* icmp)
 {
-    return (ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF));
+    return (ntohs(icmp->un.echo.id) == (getpid() & 0xFFFF));
+}
+
+int timeout_or_resend(t_ping_client*  client,
+                      struct timeval* start_time,
+                      struct timeval* now,
+                      struct timeval* send_time)
+{
+    if (client->args.all_args & OPT_TIMEOUT)
+    {
+        struct timeval elapsed = sub_timestamp(now, start_time);
+        if (elapsed.tv_sec >= client->args.timeout)
+        {
+            g_exit_program = true;
+        }
+    }
+
+    if ((client->packet[client->seq % MAX_PING_SAVES].status == 0) &&
+        (is_timeout(client, now, send_time) == true))
+    {
+        printf("Request timeout for icmp_seq %d\n", client->seq);
+        client->packet[client->seq % MAX_PING_SAVES].status = -1;
+        client->counter.lost++;
+    }
+
+    if (client->packet[client->seq % MAX_PING_SAVES].status != 0 &&
+        resend_packet(client, now, send_time) == true)
+    {
+        return RESEND;
+    }
+
+    return SUCCESS;
 }
 
 float verify_response(t_ping_client* client, unsigned char* recv_buff, struct timeval recv_time)
@@ -41,14 +74,14 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
     icmp_check->checksum       = 0;
     uint16_t recv_checksum     = icmp_checksum((unsigned char*)icmp_check, 8 + PAYLOAD_SIZE);
 
-    if (client->packet[recv_seq % MAX_PING_SAVES].received == -1)
+    if (client->packet[recv_seq % MAX_PING_SAVES].status == -1)
     {
         if (client->args.all_args & OPT_VERBOSE)
             fprintf(stderr, "Late reply for icmp_seq %d (previously timed out)\n", recv_seq);
         client->counter.error++;
         return (-rtt);
     }
-    else if (client->packet[recv_seq % MAX_PING_SAVES].received == true)
+    else if (client->packet[recv_seq % MAX_PING_SAVES].status == true)
     {
         if (client->args.all_args & OPT_VERBOSE)
             fprintf(stderr, "Duplicate reply for icmp_seq %d\n", recv_seq);
@@ -76,10 +109,11 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
         return (-rtt);
     }
 
-    client->packet[recv_seq % MAX_PING_SAVES].received = true;
+    client->packet[recv_seq % MAX_PING_SAVES].status = true;
     print_ping_line(ip, icmp, rtt, ttl, client->packet);
 
-    update_client_time_stats(&client->time_stats, rtt, client->counter.transmitted);
+    update_client_time_stats(
+        &client->time_stats, rtt, client->counter.received + client->counter.lost + 1);
 
     return (rtt);
 }

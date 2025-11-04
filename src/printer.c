@@ -1,11 +1,29 @@
 #include "../includes/ping.h"
 
+void print_start_ping(t_ping_client* client)
+{
+    // 28 = 20 (IP header min) + 8 (ICMP header) (peut etre variable mais pour l'affichage initial
+    // on met 28)
+    printf("PING %s (%s) %d(%d) data bytes",
+           client->name,
+           client->ip,
+           PAYLOAD_SIZE,
+           PAYLOAD_SIZE + 28);
+    if (client->args.all_args & OPT_VERBOSE)
+    {
+        int pid = getpid() & 0xFFFF;
+
+        printf(" id 0x%x = %d", pid, pid);
+    }
+    printf("\n");
+}
+
 void print_error(char* msg)
 {
     fprintf(stderr, "ping: %s\n", msg);
 }
 
-void print_ping_infos(t_ping_client* client, double success_rate, double mdev)
+void print_ping_infos(t_ping_client* client, double success_rate, double mdev, int total_msg)
 {
     fprintf(stdout, "\n--- %s ping statistics ---\n", client->ip);
 
@@ -13,7 +31,7 @@ void print_ping_infos(t_ping_client* client, double success_rate, double mdev)
     {
         fprintf(stdout,
                 "%d packets transmitted, %d packets received, +%d errors, %.1f%% packet loss\n",
-                client->counter.transmitted,
+                total_msg,
                 client->counter.received,
                 client->counter.error,
                 success_rate);
@@ -22,7 +40,7 @@ void print_ping_infos(t_ping_client* client, double success_rate, double mdev)
     {
         fprintf(stdout,
                 "%d packets transmitted, %d packets received, %.1f%% packet loss\n",
-                client->counter.transmitted,
+                total_msg,
                 client->counter.received,
                 success_rate);
     }

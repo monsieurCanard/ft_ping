@@ -19,6 +19,8 @@
 #define PAYLOAD_SIZE   56
 #define MAX_PING_SAVES 1024
 
+#define RESEND 1
+
 #define TIMEOUT_SEC  5
 #define TIMEOUT_USEC 0
 
@@ -26,6 +28,10 @@
 
 #define ERROR   -1
 #define SUCCESS 0
+
+#define SEND    0
+#define RECEIVE 1
+#define TIMEOUT 2
 
 typedef struct time_stats
 {
@@ -58,8 +64,7 @@ typedef struct ping_counter
 
 typedef struct icmp_packet
 {
-    struct timeval send_time;
-    int            received;
+    int status;
 } t_icmp_packet;
 
 typedef struct args
@@ -81,12 +86,11 @@ typedef struct ping_client
     t_icmp_packet*     packet;
     fd_set             read_fds;
 
-    char*    name;
-    int      fd;
-    char*    ip;
-    int      seq;
-    int      status;
-    uint32_t target_addr;
+    char* name;
+    int   fd;
+    char* ip;
+    int   seq;
+    int   status;
 
     struct timespec delay_bt_pings;
 
@@ -103,16 +107,23 @@ int build_echo_request(t_ping_client* client, unsigned char* buff);
 
 int icmp_checksum(unsigned char* buff, int len);
 
-void print_ping_infos(t_ping_client* client, double success_rate, double mdev);
+void print_ping_infos(t_ping_client* client, double success_rate, double mdev, int total_msg);
 
 void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int count);
 
 void print_ping_line(
     struct iphdr* ip, struct icmphdr* icmp, float rtt, int ttl, t_icmp_packet* packet);
 
+void print_start_ping(t_ping_client* client);
+
 void main_loop_icmp(t_ping_client* client);
 
 float verify_response(t_ping_client* client, unsigned char* buff, struct timeval recv_time);
+
+int timeout_or_resend(t_ping_client*  client,
+                      struct timeval* start_time,
+                      struct timeval* now,
+                      struct timeval* send_time);
 
 void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* client);
 

@@ -31,17 +31,7 @@ int main(int ac, char** av)
         exit_program(&client);
     }
 
-    // 28 = 20 (IP header min) + 8 (ICMP header) (peut etre variable mais pour l'affichage initial
-    // on met 28)
-    printf(
-        "PING %s (%s) %d(%d) data bytes", client.name, client.ip, PAYLOAD_SIZE, PAYLOAD_SIZE + 28);
-    if (client.args.all_args & OPT_VERBOSE)
-    {
-        int pid = getpid() & 0xFFFF;
-
-        printf(" id 0x%x = %d", pid, pid);
-    }
-    printf("\n");
+    print_start_ping(&client);
     main_loop_icmp(&client);
 
     exit_program(&client);

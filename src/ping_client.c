@@ -20,9 +20,6 @@ static int resolve_host(t_ping_client* client, char* address)
     // Convertir l'adresse IP en chaîne de caractères pour l'affichage
     client->ip = inet_ntoa(client->sockaddr.sin_addr);
 
-    // Sauvegarder l'adresse IP binaire pour les comparaisons
-    client->target_addr = client->sockaddr.sin_addr.s_addr;
-
     return (SUCCESS);
 }
 
@@ -34,27 +31,6 @@ static int create_socket(t_ping_client* client)
         perror("Creation Socket");
         return (ERROR);
     }
-
-    // Gestion du timeout sur la reception
-
-    // if (setsockopt(client->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
-    // {
-    //     perror("Setsockopt options: ");
-    //     return (ERROR);
-    // }
-
-    // if (client->args.debug_level > 0)
-    // {
-    //     if (setsockopt(client->fd,
-    //                    SOL_SOCKET,
-    //                    SO_DEBUG,
-    //                    &client->args.debug_level,
-    //                    sizeof(client->args.debug_level)) < 0)
-    //     {
-    //         perror("Setsockopt debug: ");
-    //         return (ERROR);
-    //     }
-    // }
 
     if (client->args.all_args & OPT_TTL)
     {
@@ -71,28 +47,25 @@ static int create_socket(t_ping_client* client)
 
 int create_client(t_ping_client* client, char* address)
 {
-
     if (resolve_host(client, address) == ERROR)
         return (ERROR);
 
     if (create_socket(client) == ERROR)
         return (ERROR);
 
-    // Initialisation du delai entre chaque ping
     client->delay_bt_pings.tv_sec = SECOND_PAUSE_BT_PINGS;
     client->time_stats.min        = -1;
     client->time_stats.max        = -1;
-    client->status                = EXIT_SUCCESS;
 
     client->name = address;
 
-    client->packet = malloc(sizeof(t_icmp_packet) * 1024);
+    client->packet = malloc(sizeof(t_icmp_packet) * MAX_PING_SAVES);
     if (!client->packet)
     {
         perror("Malloc: ");
         return (ERROR);
     }
-    memset(client->packet, 0, sizeof(t_icmp_packet) * 1024);
+    memset(client->packet, 0, sizeof(t_icmp_packet) * MAX_PING_SAVES);
     return (SUCCESS);
 }
 
@@ -110,7 +83,7 @@ void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int coun
 
     time_stats->total += new_rtt;
 
-    double delta = new_rtt - time_stats->average;
-    time_stats->average += delta / count;
-    time_stats->delta += delta * (new_rtt - time_stats->average);
+    double tmp_delta = new_rtt - time_stats->average;
+    time_stats->average += tmp_delta / count;
+    time_stats->delta += tmp_delta * (new_rtt - time_stats->average);
 }
