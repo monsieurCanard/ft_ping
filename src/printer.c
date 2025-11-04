@@ -62,7 +62,7 @@ void print_helper()
     printf("  -i, --interval N  Set the interval between sending each packet to N seconds\n");
     printf("  -c, --count N     Stop after sending N packets\n");
     printf("  -W, --linger N    Set the time to wait for a response to N seconds\n");
-    printf("  -h, --help        Display this help message and exit\n");
+    printf("  -?, --help        Display this help message and exit\n");
     printf("\nExample:\n");
     printf("sudo ./ft_ping [options] [hostname/ip]\n");
     printf("\nNote: This program requires root privileges to run.\n");

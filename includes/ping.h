@@ -16,13 +16,13 @@
 #include <time.h>
 #include <unistd.h>
 
-#define PAYLOAD_SIZE 56
+#define PAYLOAD_SIZE   56
+#define MAX_PING_SAVES 1024
 
-#define TIMEOUT_SEC  10
+#define TIMEOUT_SEC  5
 #define TIMEOUT_USEC 0
 
-#define SECOND_PAUSE_BT_PINGS     1
-#define NANOSECOND_PAUSE_BT_PINGS 0
+#define SECOND_PAUSE_BT_PINGS 1
 
 #define ERROR   -1
 #define SUCCESS 0
@@ -38,16 +38,15 @@ typedef struct time_stats
 
 } t_time_stats;
 
-typedef struct args
+enum OPT_ARGS
 {
-    bool verbose;
-    int  debug_level;
-    int  ttl;
-    int  interval;
-    int  count;
-    int  timeout;
-
-} t_args;
+    OPT_VERBOSE  = 1 << 0,
+    OPT_TTL      = 1 << 1,
+    OPT_INTERVAL = 1 << 2,
+    OPT_COUNT    = 1 << 3,
+    OPT_LINGER   = 1 << 4,
+    OPT_TIMEOUT  = 1 << 5
+};
 
 typedef struct ping_counter
 {
@@ -63,11 +62,24 @@ typedef struct icmp_packet
     int            received;
 } t_icmp_packet;
 
+typedef struct args
+{
+    int           all_args;
+    enum OPT_ARGS args;
+
+    int ttl;
+    int linger;
+    int interval;
+    int count;
+    int timeout;
+} t_args;
+
 typedef struct ping_client
 {
     t_args             args;
     struct sockaddr_in sockaddr;
     t_icmp_packet*     packet;
+    fd_set             read_fds;
 
     char*    name;
     int      fd;
@@ -109,3 +121,9 @@ void exit_program(t_ping_client* client);
 void print_helper();
 
 void print_error(char* msg);
+
+struct timeval add_timestamp(struct timeval* time1, struct timeval* time2);
+struct timeval sub_timestamp(struct timeval* time1, struct timeval* time2);
+bool           is_timeout(t_ping_client* client, struct timeval* now, struct timeval* time);
+
+bool resend_packet(t_ping_client* client, struct timeval* now, struct timeval* time);

@@ -13,7 +13,7 @@ void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* cl
 
         if (icmp->type == ICMP_TIME_EXCEEDED)
         {
-            if (client->args.verbose)
+            if (client->args.all_args & OPT_VERBOSE)
                 fprintf(stderr,
                         "From %s icmp_seq=%d Time to live exceeded\n",
                         inet_ntoa(*(struct in_addr*)&ip->saddr),
@@ -21,7 +21,7 @@ void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* cl
         }
         else /* DEST_UNREACH */
         {
-            if (client->args.verbose)
+            if (client->args.all_args & OPT_VERBOSE)
                 fprintf(stderr,
                         "From %s icmp_seq=%d Destination Unreachable\n",
                         inet_ntoa(*(struct in_addr*)&ip->saddr),
@@ -31,7 +31,7 @@ void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* cl
         return;
     }
 
-    if (client->args.verbose)
+    if (client->args.all_args & OPT_VERBOSE)
         fprintf(stderr,
                 "From %s icmp_seq=%d type=%d code=%d\n",
                 inet_ntoa(*(struct in_addr*)&ip->saddr),

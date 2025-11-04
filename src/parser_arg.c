@@ -2,30 +2,21 @@
 
 int parse_args(int ac, char** av, t_ping_client* client)
 {
-    struct option long_options[] = {
-        {"verbose", no_argument, 0, 'v'},
-        {"debug", required_argument, 0, 'd'},
-        {"help", no_argument, 0, '?'},
-        {"ttl", required_argument, 0, 't'},      // Set N as the packet time-to-live.
-        {"interval", required_argument, 0, 'i'}, // Définit l'intervalle entre les pings
-        {"count", required_argument, 0, 'c'},    // Nombre de pings à envoyer
-        {"linger", required_argument, 0, 'W'},
-        // Number of seconds to wait for response.
-        {0, 0, 0, 0} // Fin des options
-    };
+    struct option long_options[] = {{"help", no_argument, 0, '?'},
+                                    {"interval", required_argument, 0, 'i'},
+                                    {"verbose", no_argument, 0, 'v'},
+                                    {"linger", required_argument, 0, 'W'},
+                                    {"timeout", required_argument, 0, 'l'},
+                                    {"ttl", required_argument, 0, 't'},
+                                    {"count", required_argument, 0, 'c'},
+                                    {0, 0, 0, 0}};
 
     int opt;
     opterr = 0;
-    while ((opt = getopt_long(ac, av, "::d?h::t:i:c:W:v", long_options, NULL)) != -1)
+    while ((opt = getopt_long(ac, av, "?vl:t:i:c:W:w:", long_options, NULL)) != -1)
     {
         switch (opt)
         {
-        case 'v':
-            client->args.verbose = true;
-            break;
-        case 'd':
-            client->args.debug_level = 1;
-            break;
         case '?':
             if (optopt != 0)
             {
@@ -37,11 +28,16 @@ int parse_args(int ac, char** av, t_ping_client* client)
             }
             print_helper();
             return (ERROR);
+
+        case 'v':
+            client->args.all_args |= OPT_VERBOSE;
+            break;
         case 't':
-            // Définir le TTL
+            client->args.all_args |= OPT_TTL;
             client->args.ttl = atoi(optarg);
             break;
         case 'i':
+            client->args.all_args |= OPT_INTERVAL;
             client->args.interval = atoi(optarg); // en secondes
             if (client->args.interval < 0)
             {
@@ -50,6 +46,7 @@ int parse_args(int ac, char** av, t_ping_client* client)
             }
             break;
         case 'c':
+            client->args.all_args |= OPT_COUNT;
             client->args.count = atoi(optarg);
             if (client->args.count <= 0)
             {
@@ -58,6 +55,17 @@ int parse_args(int ac, char** av, t_ping_client* client)
             }
             break;
         case 'W':
+            client->args.all_args |= OPT_LINGER;
+            client->args.linger = atoi(optarg);
+            if (client->args.linger < 0)
+            {
+                fprintf(stderr, "ping: invalid linger time %s\n", optarg);
+                return (ERROR);
+            }
+            break;
+
+        case 'w':
+            client->args.all_args |= OPT_TIMEOUT;
             client->args.timeout = atoi(optarg);
             if (client->args.timeout < 0)
             {

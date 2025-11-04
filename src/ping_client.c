@@ -36,15 +36,12 @@ static int create_socket(t_ping_client* client)
     }
 
     // Gestion du timeout sur la reception
-    struct timeval timeout;
-    timeout.tv_sec  = (client->args.timeout != 0) ? client->args.timeout : TIMEOUT_SEC;
-    timeout.tv_usec = TIMEOUT_USEC;
 
-    if (setsockopt(client->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
-    {
-        perror("Setsockopt options: ");
-        return (ERROR);
-    }
+    // if (setsockopt(client->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+    // {
+    //     perror("Setsockopt options: ");
+    //     return (ERROR);
+    // }
 
     // if (client->args.debug_level > 0)
     // {
@@ -59,10 +56,7 @@ static int create_socket(t_ping_client* client)
     //     }
     // }
 
-    fprintf(stdout, "timeout = %d sec, %d usec\n", (int)timeout.tv_sec, (int)timeout.tv_usec);
-
-    fprintf(stdout, "ttl = %d\n", (client->args.ttl != 0) ? client->args.ttl : 64);
-    if (client->args.ttl != 0)
+    if (client->args.all_args & OPT_TTL)
     {
         if (setsockopt(
                 client->fd, IPPROTO_IP, IP_TTL, &client->args.ttl, sizeof(client->args.ttl)) < 0)
@@ -71,16 +65,12 @@ static int create_socket(t_ping_client* client)
             return (ERROR);
         }
     }
-    // int ttl_value = 1;
-    // setsockopt(client->fd, IPPROTO_IP, IP_TTL, &ttl_value, sizeof(ttl_value));
 
     return (SUCCESS);
 }
 
 int create_client(t_ping_client* client, char* address)
 {
-
-    memset(client, 0, sizeof(t_ping_client));
 
     if (resolve_host(client, address) == ERROR)
         return (ERROR);
@@ -89,11 +79,10 @@ int create_client(t_ping_client* client, char* address)
         return (ERROR);
 
     // Initialisation du delai entre chaque ping
-    client->delay_bt_pings.tv_sec  = SECOND_PAUSE_BT_PINGS;
-    client->delay_bt_pings.tv_nsec = NANOSECOND_PAUSE_BT_PINGS;
-    client->time_stats.min         = -1;
-    client->time_stats.max         = -1;
-    client->status                 = EXIT_SUCCESS;
+    client->delay_bt_pings.tv_sec = SECOND_PAUSE_BT_PINGS;
+    client->time_stats.min        = -1;
+    client->time_stats.max        = -1;
+    client->status                = EXIT_SUCCESS;
 
     client->name = address;
 

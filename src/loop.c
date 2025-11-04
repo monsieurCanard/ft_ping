@@ -18,23 +18,61 @@ void send_message(t_ping_client* client, struct sockaddr_in sockaddr)
 
     // ! Envoi de la requete ICMP
     sendto(client->fd, send_buff, payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
-
+    client->packet[client->seq].received = 0;
     client->counter.transmitted++;
 }
 
 void main_loop_icmp(t_ping_client* client)
 {
-    unsigned char  recv_buff[8 + 20 + PAYLOAD_SIZE];
-    int            receive_packet, ret = 0;
-    struct timeval recv_time;
+    unsigned char recv_buff[8 + 20 + PAYLOAD_SIZE];
+    // int            receive_packet, ret = 0;
+    struct timeval start_time, recv_time, send_time, now;
     float          new_rtt;
+
+    struct timeval timeout;
+    timeout.tv_sec  = 0;
+    timeout.tv_usec = 0;
+
+    gettimeofday(&start_time, NULL);
+    send_message(client, client->sockaddr);
+    gettimeofday(&send_time, NULL);
 
     while (!g_exit_program)
     {
-        receive_packet = 0;
-        send_message(client, client->sockaddr);
+        FD_ZERO(&client->read_fds);
+        FD_SET(client->fd, &client->read_fds);
 
-        while (receive_packet == 0 && !g_exit_program)
+        gettimeofday(&now, NULL);
+        if (client->args.all_args & OPT_TIMEOUT)
+        {
+            struct timeval elapsed = sub_timestamp(&now, &start_time);
+            if (elapsed.tv_sec >= client->args.timeout)
+            {
+                g_exit_program = true;
+            }
+        }
+
+        if ((client->packet[client->seq].received == 0) &&
+            (is_timeout(client, &now, &send_time) == true))
+        {
+            printf("Request timeout for icmp_seq %d\n", client->seq);
+            client->packet[client->seq % MAX_PING_SAVES].received = -1;
+            client->counter.lost++;
+        }
+
+        if (client->packet[client->seq % MAX_PING_SAVES].received != 0 &&
+            resend_packet(client, &now, &send_time) == true)
+        {
+            send_message(client, client->sockaddr);
+            gettimeofday(&send_time, NULL);
+        }
+
+        int ret = select(client->fd + 1, &client->read_fds, NULL, NULL, &timeout);
+        if (ret < 0)
+        {
+            exit_program(client);
+        }
+        else if (ret == 1)
         {
             // ! Reception de la reponse ICMP
             socklen_t addrlen = sizeof(client->sockaddr);
@@ -44,39 +82,19 @@ void main_loop_icmp(t_ping_client* client)
                            0,
                            (struct sockaddr*)&client->sockaddr,
                            &addrlen);
-
-            if (ret == ERROR)
-            {
-                if (errno == EWOULDBLOCK)
-                {
-                    client->packet[client->seq].received = -1;
-                    client->counter.lost++;
-                    break;
-                }
-                exit_program(client);
-            }
-
             gettimeofday(&recv_time, NULL);
-
             new_rtt = verify_response(client, recv_buff, recv_time);
-
             if (new_rtt > 0)
             {
+                client->packet[client->seq % MAX_PING_SAVES].received = 1;
                 new_rtt *= -1;
                 client->counter.received++;
             }
-            receive_packet = 1;
+
+            if (client->args.all_args & OPT_COUNT && client->counter.received >= client->args.count)
+            {
+                g_exit_program = true;
+            }
         }
-
-        double elapsed_time =
-            (client->delay_bt_pings.tv_sec * 1000.0 + client->delay_bt_pings.tv_nsec / 1000000.0) -
-            new_rtt;
-        usleep(elapsed_time * 1000);
-
-        client->args.count--;
-        if (client->args.count == 0)
-            g_exit_program = true;
     }
-
-    exit_program(client);
 }
