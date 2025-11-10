@@ -38,7 +38,10 @@ int timeout_or_resend(t_ping_client*  client,
     return SUCCESS;
 }
 
-float verify_response(t_ping_client* client, unsigned char* recv_buff, struct timeval recv_time)
+float verify_response(struct sockaddr_in* src_addr,
+                      t_ping_client*      client,
+                      unsigned char*      recv_buff,
+                      struct timeval      recv_time)
 {
     // buff contient tout le paquet IP recu
     // On doit sauter l'entete IP pour acceder a l'entete ICMP
@@ -50,14 +53,14 @@ float verify_response(t_ping_client* client, unsigned char* recv_buff, struct ti
     int             ip_header_len = ip->ihl * 4;
     struct icmphdr* icmp          = (struct icmphdr*)(recv_buff + ip_header_len);
 
-    if (!paquet_for_me(icmp))
-        return (ERROR);
-
     if (icmp->type != ICMP_ECHOREPLY)
     {
-        handle_error_icmp(icmp, ip, client);
+        handle_error_icmp(src_addr, icmp, ip, client);
         return (ERROR);
     }
+
+    if (!paquet_for_me(icmp))
+        return (ERROR);
 
     unsigned char icmp_buf[8 + PAYLOAD_SIZE];
     memcpy(icmp_buf, icmp, 8 + PAYLOAD_SIZE);

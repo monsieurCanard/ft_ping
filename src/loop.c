@@ -1,3 +1,5 @@
+#include <netinet/in.h>
+
 #include "../includes/ping.h"
 
 extern bool g_exit_program;
@@ -52,16 +54,13 @@ void main_loop_icmp(t_ping_client* client)
 
         if (ret == 1)
         {
-            socklen_t addrlen = sizeof(client->sockaddr);
-            ret               = recvfrom(client->fd,
-                           recv_buff,
-                           sizeof(recv_buff),
-                           0,
-                           (struct sockaddr*)&client->sockaddr,
-                           &addrlen);
+            struct sockaddr_in src_addr;
+            socklen_t          addrlen = sizeof(src_addr);
+            ret                        = recvfrom(
+                client->fd, recv_buff, sizeof(recv_buff), 0, (struct sockaddr*)&src_addr, &addrlen);
 
             gettimeofday(&recv_time, NULL);
-            new_rtt = verify_response(client, recv_buff, recv_time);
+            new_rtt = verify_response(&src_addr, client, recv_buff, recv_time);
             if (new_rtt > 0)
             {
                 client->packet[client->seq % MAX_PING_SAVES].status = 1;

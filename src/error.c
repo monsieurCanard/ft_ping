@@ -1,6 +1,11 @@
+#include <sys/socket.h>
+
 #include "../includes/ping.h"
 
-void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* client)
+void handle_error_icmp(struct sockaddr_in* src_addr,
+                       struct icmphdr*     icmp,
+                       struct iphdr*       ip,
+                       t_ping_client*      client)
 {
     if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP_DEST_UNREACH)
     {
@@ -11,26 +16,67 @@ void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* cl
         struct icmphdr* orig_icmp = (struct icmphdr*)(inner + orig_ihl);
         uint16_t        orig_seq  = ntohs(orig_icmp->un.echo.sequence);
 
-        if (icmp->type == ICMP_TIME_EXCEEDED)
+        if (ntohs(orig_icmp->un.echo.id) != (getpid() & 0xFFFF))
+            return;
+
+        if (client->args.all_args & OPT_VERBOSE)
+            fprintf(stderr,
+                    "%d bytes from %s : %s\n",
+                    ntohs(ip->tot_len), /* total length of the IP packet */
+                    inet_ntoa(*(struct in_addr*)&ip->saddr),
+                    (icmp->type == ICMP_TIME_EXCEEDED) ? "Time to live exceeded"
+                                                       : "Destination Unreachable");
+        fprintf(stderr, "IP Hdr Dump:\n");
+        for (int i = 0; i < orig_ihl; i++)
         {
-            if (client->args.all_args & OPT_VERBOSE)
-                fprintf(stderr,
-                        "From %s icmp_seq=%d Time to live exceeded\n",
-                        inet_ntoa(*(struct in_addr*)&ip->saddr),
-                        orig_seq);
+            fprintf(stderr, "%02x", *((unsigned char*)orig_ip + i));
+            if ((i + 1) % 2 == 0)
+            {
+                fprintf(stderr, " ");
+            }
         }
-        else /* DEST_UNREACH */
-        {
-            if (client->args.all_args & OPT_VERBOSE)
-                fprintf(stderr,
-                        "From %s icmp_seq=%d Destination Unreachable\n",
-                        inet_ntoa(*(struct in_addr*)&ip->saddr),
-                        orig_seq);
-        }
+
+        char src_buf[INET_ADDRSTRLEN], dst_buf[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &orig_ip->saddr, src_buf, sizeof src_buf);
+        inet_ntop(AF_INET, &orig_ip->daddr, dst_buf, sizeof dst_buf);
+
+        printf("\nVr HL TOS  Len  ID  Flg  Off TTL Pro  Cks      Src            Dst\n");
+        printf("%1d  %1d  %02x  %04d %04d %1d  %04d  %02d  %03d %04x  %s    %s\n",
+               (orig_ip->version & 0x0F),
+               (orig_ip->ihl & 0x0F),
+               orig_ip->tos,
+               ntohs(orig_ip->tot_len),
+               ntohs(orig_ip->id),
+               (ntohs(orig_ip->frag_off) >> 13) & 0x07,
+               (ntohs(orig_ip->frag_off) & 0x1FFF),
+               orig_ip->ttl,
+               orig_ip->protocol,
+               ntohs(orig_ip->check),
+               src_buf,
+               dst_buf);
+
+        printf("\n");
+        (void)src_addr;
+        // if (icmp->type == ICMP_TIME_EXCEEDED)
+        // {
+        //     if (client->args.all_args & OPT_VERBOSE)
+        //         fprintf(stderr,
+        //                 "%d bytes from %s Time to live exceeded\n",
+        //                 ntohs(ip->tot_len), /* total length of the IP packet */
+        //                 inet_ntoa(*(struct in_addr*)&src_addr->sin_addr));
+        // }
+        // else /* DEST_UNREACH */
+        // {
+        //     if (client->args.all_args & OPT_VERBOSE)
+        //         fprintf(stderr,
+        //                 "From %s icmp_seq=%d Destination Unreachable\n",
+        //                 inet_ntoa(*(struct in_addr*)&ip->saddr),
+        //                 orig_seq);
+        // }
         client->counter.error++;
+        client->packet[orig_seq % MAX_PING_SAVES].status = -1;
         return;
     }
-
     if (client->args.all_args & OPT_VERBOSE)
         fprintf(stderr,
                 "From %s icmp_seq=%d type=%d code=%d\n",

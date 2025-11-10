@@ -6,7 +6,7 @@ int parse_args(int ac, char** av, t_ping_client* client)
                                     {"interval", required_argument, 0, 'i'},
                                     {"verbose", no_argument, 0, 'v'},
                                     {"linger", required_argument, 0, 'W'},
-                                    {"timeout", required_argument, 0, 'l'},
+                                    {"timeout", required_argument, 0, 'w'},
                                     {"ttl", required_argument, 0, 't'},
                                     {"count", required_argument, 0, 'c'},
                                     {0, 0, 0, 0}};
