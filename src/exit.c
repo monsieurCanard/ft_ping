@@ -19,8 +19,8 @@ void exit_program(t_ping_client* client)
         close(client->fd);
     }
 
-    if (client->packet)
-        free(client->packet);
+    if (client->packets)
+        free(client->packets);
 
     exit(client->status);
 }

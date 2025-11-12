@@ -68,6 +68,12 @@ typedef struct icmp_packet
     int status;
 } t_icmp_packet;
 
+typedef struct data_icmp
+{
+    struct iphdr*   ip_header;
+    struct icmphdr* data;
+} t_data_icmp;
+
 typedef struct args
 {
     int           all_args;
@@ -80,11 +86,13 @@ typedef struct args
     int timeout;
 } t_args;
 
+// typedef struct
+
 typedef struct ping_client
 {
     t_args             args;
     struct sockaddr_in sockaddr;
-    t_icmp_packet*     packet;
+    t_icmp_packet*     packets;
     fd_set             read_fds;
 
     char* name;
@@ -119,20 +127,14 @@ void print_start_ping(t_ping_client* client);
 
 void main_loop_icmp(t_ping_client* client);
 
-float verify_response(struct sockaddr_in* src_addr,
-                      t_ping_client*      client,
-                      unsigned char*      buff,
-                      struct timeval      recv_time);
+float verify_response(t_ping_client* client, unsigned char* buff, struct timeval recv_time);
 
 int timeout_or_resend(t_ping_client*  client,
                       struct timeval* start_time,
                       struct timeval* now,
                       struct timeval* send_time);
 
-void handle_error_icmp(struct sockaddr_in* src_addr,
-                       struct icmphdr*     icmp,
-                       struct iphdr*       ip,
-                       t_ping_client*      client);
+void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* client);
 
 void exit_program(t_ping_client* client);
 

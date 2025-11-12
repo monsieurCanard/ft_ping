@@ -176,3 +176,40 @@ Du coup, quand on écrit/lit un champ dans un paquet, on doit convertir.
 **ntohs(x)** → network to host short (16 bits → uint16_t)
 
 **ntohl(x)** → network to host long (32 bits → uint32_t)
+
+
+
+## DUMP ICMP Echo Request
+
+```bash
+36 bytes from _gateway (10.0.2.2): Time to live exceeded
+IP Hdr Dump:
+ 4500 0054 988b 4000 0101 1568 0a00 020f acd9 12ce
+Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src          Dst          Data
+ 4  5  00 0054 988b   2 0000  01  01 1568 10.0.2.15  172.217.18.206
+```
+
+### Analyse de l’en-tête IP
+```bash
+
+
+| Champ                         | Octets      | Valeur                 | Signification                                                 |
+| ----------------------------- | ----------- | ---------------------- | ------------------------------------------------------------- |
+| **Version (Vr)**              | `4`         | 4                      | Version du protocole IP (IPv4).                               |
+| **Header Length (HL)**        | `5`         | 5 × 4 = **20 octets**  | Taille de l’en-tête IP.                                       |
+| **Type of Service (TOS)**     | `00`        | 0x00                   | Pas de priorité particulière (deprecated → DSCP aujourd’hui). |
+| **Total Length (Len)**        | `0054`      | 0x0054 = **84 octets** | Taille totale du paquet IP (en-tête + données).               |
+| **Identification (ID)**       | `988b`      | 0x988b                 | Numéro d’identification utilisé pour la fragmentation.        |
+| **Flags (Flg)**               | `2` → `010` | DF=1                   | Le bit “Don’t Fragment” est positionné (ne pas fragmenter).   |
+| **Fragment Offset (off)**     | `0000`      | 0                      | Pas de fragmentation.                                         |
+| **Time To Live (TTL)**        | `01`        | 1                      | Le paquet a expiré après une seule route → cause de l’erreur. |
+| **Protocol (Pro)**            | `01`        | 1 = ICMP               | Indique que la couche supérieure est ICMP.                    |
+| **Header Checksum (cks)**     | `1568`      | 0x1568                 | Somme de contrôle de l’en-tête IP.                            |
+| **Source Address (Src)**      | `0a00 020f` | 10.0.2.15              | Adresse IP de la machine émettrice (toi).                     |
+| **Destination Address (Dst)** | `acd9 12ce` | 172.217.18.206         | Destination du paquet (ici Google).                           |
+
+```
+
+``` bash
+ICMP: type 8, code 0, size 64, id 0x2151, seq 0x0000, seq 1
+```

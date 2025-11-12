@@ -2,10 +2,7 @@
 
 #include "../includes/ping.h"
 
-void handle_error_icmp(struct sockaddr_in* src_addr,
-                       struct icmphdr*     icmp,
-                       struct iphdr*       ip,
-                       t_ping_client*      client)
+void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* client)
 {
     if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP_DEST_UNREACH)
     {
@@ -22,7 +19,7 @@ void handle_error_icmp(struct sockaddr_in* src_addr,
         if (client->args.all_args & OPT_VERBOSE)
             fprintf(stderr,
                     "%d bytes from %s : %s\n",
-                    ntohs(ip->tot_len), /* total length of the IP packet */
+                    ntohs(ip->tot_len),
                     inet_ntoa(*(struct in_addr*)&ip->saddr),
                     (icmp->type == ICMP_TIME_EXCEEDED) ? "Time to live exceeded"
                                                        : "Destination Unreachable");
@@ -55,26 +52,15 @@ void handle_error_icmp(struct sockaddr_in* src_addr,
                src_buf,
                dst_buf);
 
-        printf("\n");
-        (void)src_addr;
-        // if (icmp->type == ICMP_TIME_EXCEEDED)
-        // {
-        //     if (client->args.all_args & OPT_VERBOSE)
-        //         fprintf(stderr,
-        //                 "%d bytes from %s Time to live exceeded\n",
-        //                 ntohs(ip->tot_len), /* total length of the IP packet */
-        //                 inet_ntoa(*(struct in_addr*)&src_addr->sin_addr));
-        // }
-        // else /* DEST_UNREACH */
-        // {
-        //     if (client->args.all_args & OPT_VERBOSE)
-        //         fprintf(stderr,
-        //                 "From %s icmp_seq=%d Destination Unreachable\n",
-        //                 inet_ntoa(*(struct in_addr*)&ip->saddr),
-        //                 orig_seq);
-        // }
+        printf("ICMP: Type %d, code %d, size %d, id 0x%04x, seq 0x%04x\n",
+               orig_icmp->type,
+               orig_icmp->code,
+               ntohs(orig_ip->tot_len) - orig_ihl,
+               ntohs(orig_icmp->un.echo.id),
+               ntohs(orig_icmp->un.echo.sequence));
+
         client->counter.error++;
-        client->packet[orig_seq % MAX_PING_SAVES].status = -1;
+        client->packets[orig_seq % MAX_PING_SAVES].status = -1;
         return;
     }
     if (client->args.all_args & OPT_VERBOSE)

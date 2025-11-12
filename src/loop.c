@@ -18,7 +18,7 @@ static void send_message(t_ping_client* client, struct sockaddr_in sockaddr)
     }
 
     sendto(client->fd, send_buff, payload_size, 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
-    client->packet[client->seq % MAX_PING_SAVES].status = 0;
+    client->packets[client->seq % MAX_PING_SAVES].status = 0;
 }
 
 void main_loop_icmp(t_ping_client* client)
@@ -60,10 +60,10 @@ void main_loop_icmp(t_ping_client* client)
                 client->fd, recv_buff, sizeof(recv_buff), 0, (struct sockaddr*)&src_addr, &addrlen);
 
             gettimeofday(&recv_time, NULL);
-            new_rtt = verify_response(&src_addr, client, recv_buff, recv_time);
+            new_rtt = verify_response(client, recv_buff, recv_time);
             if (new_rtt > 0)
             {
-                client->packet[client->seq % MAX_PING_SAVES].status = 1;
+                client->packets[client->seq % MAX_PING_SAVES].status = 1;
                 new_rtt *= -1;
                 client->counter.received++;
             }

@@ -21,15 +21,15 @@ int timeout_or_resend(t_ping_client*  client,
         }
     }
 
-    if ((client->packet[client->seq % MAX_PING_SAVES].status == 0) &&
+    if ((client->packets[client->seq % MAX_PING_SAVES].status == 0) &&
         (is_timeout(client, now, send_time) == true))
     {
         printf("Request timeout for icmp_seq %d\n", client->seq);
-        client->packet[client->seq % MAX_PING_SAVES].status = -1;
+        client->packets[client->seq % MAX_PING_SAVES].status = -1;
         client->counter.lost++;
     }
 
-    if (client->packet[client->seq % MAX_PING_SAVES].status != 0 &&
+    if (client->packets[client->seq % MAX_PING_SAVES].status != 0 &&
         resend_packet(client, now, send_time) == true)
     {
         return RESEND;
@@ -38,35 +38,36 @@ int timeout_or_resend(t_ping_client*  client,
     return SUCCESS;
 }
 
-float verify_response(struct sockaddr_in* src_addr,
-                      t_ping_client*      client,
-                      unsigned char*      recv_buff,
-                      struct timeval      recv_time)
+static struct data_icmp extract_paquet_icmp(unsigned char* buff)
 {
-    // buff contient tout le paquet IP recu
-    // On doit sauter l'entete IP pour acceder a l'entete ICMP
-    // La taille de l'entete IP est variable, on recupere sa taille
-    // dans les 4 premiers bits de l'entete IP
-    struct iphdr* ip  = (struct iphdr*)recv_buff;
-    int           ttl = ip->ttl;
 
-    int             ip_header_len = ip->ihl * 4;
-    struct icmphdr* icmp          = (struct icmphdr*)(recv_buff + ip_header_len);
+    struct data_icmp data;
 
-    if (icmp->type != ICMP_ECHOREPLY)
+    data.ip_header    = (struct iphdr*)buff;
+    int ip_header_len = data.ip_header->ihl * 4;
+    data.data         = (struct icmphdr*)(buff + ip_header_len);
+    return data;
+}
+
+float verify_response(t_ping_client* client, unsigned char* recv_buff, struct timeval recv_time)
+{
+
+    struct data_icmp icmp = extract_paquet_icmp(recv_buff);
+
+    if (icmp.data->type != ICMP_ECHOREPLY)
     {
-        handle_error_icmp(src_addr, icmp, ip, client);
+        handle_error_icmp(icmp.data, icmp.ip_header, client);
         return (ERROR);
     }
 
-    if (!paquet_for_me(icmp))
+    if (!paquet_for_me(icmp.data))
         return (ERROR);
 
     unsigned char icmp_buf[8 + PAYLOAD_SIZE];
-    memcpy(icmp_buf, icmp, 8 + PAYLOAD_SIZE);
+    memcpy(icmp_buf, icmp.data, 8 + PAYLOAD_SIZE);
 
-    uint16_t original_checksum = icmp->checksum;
-    uint16_t recv_seq          = ntohs(icmp->un.echo.sequence);
+    uint16_t original_checksum = icmp.data->checksum;
+    uint16_t recv_seq          = ntohs(icmp.data->un.echo.sequence);
 
     struct timeval* send_time = (struct timeval*)(icmp_buf + 8);
 
@@ -77,14 +78,14 @@ float verify_response(struct sockaddr_in* src_addr,
     icmp_check->checksum       = 0;
     uint16_t recv_checksum     = icmp_checksum((unsigned char*)icmp_check, 8 + PAYLOAD_SIZE);
 
-    if (client->packet[recv_seq % MAX_PING_SAVES].status == -1)
+    if (client->packets[recv_seq % MAX_PING_SAVES].status == -1)
     {
         if (client->args.all_args & OPT_VERBOSE)
             fprintf(stderr, "Late reply for icmp_seq %d (previously timed out)\n", recv_seq);
         client->counter.error++;
         return (-rtt);
     }
-    else if (client->packet[recv_seq % MAX_PING_SAVES].status == true)
+    else if (client->packets[recv_seq % MAX_PING_SAVES].status == true)
     {
         if (client->args.all_args & OPT_VERBOSE)
             fprintf(stderr, "Duplicate reply for icmp_seq %d\n", recv_seq);
@@ -92,28 +93,28 @@ float verify_response(struct sockaddr_in* src_addr,
         return (-rtt);
     }
 
-    if (recv_checksum != original_checksum || recv_seq > client->seq || icmp->code != 0)
+    if (recv_checksum != original_checksum || recv_seq > client->seq || icmp.data->code != 0)
     {
         if (client->args.all_args & OPT_VERBOSE)
             fprintf(stderr,
                     "From %s icmp_seq=%d type=%d code=%d\n",
-                    inet_ntoa(*(struct in_addr*)&ip->saddr),
+                    inet_ntoa(*(struct in_addr*)&icmp.ip_header->saddr),
                     recv_seq,
-                    icmp->type,
-                    icmp->code);
+                    icmp.data->type,
+                    icmp.data->code);
         client->counter.error++;
         return (-rtt);
     }
 
-    if (ntohs(icmp->un.echo.id) != (getpid() & 0xFFFF))
+    if (ntohs(icmp.data->un.echo.id) != (getpid() & 0xFFFF))
     {
         if (client->args.all_args & OPT_VERBOSE)
-            fprintf(stderr, "Received packet with unknown ID %d\n", ntohs(icmp->un.echo.id));
+            fprintf(stderr, "Received packet with unknown ID %d\n", ntohs(icmp.data->un.echo.id));
         return (-rtt);
     }
 
-    client->packet[recv_seq % MAX_PING_SAVES].status = true;
-    print_ping_line(ip, icmp, rtt, ttl, client->packet);
+    client->packets[recv_seq % MAX_PING_SAVES].status = true;
+    print_ping_line(icmp.ip_header, icmp.data, rtt, icmp.ip_header->ttl, client->packets);
 
     update_client_time_stats(
         &client->time_stats, rtt, client->counter.received + client->counter.lost + 1);

@@ -59,13 +59,13 @@ int create_client(t_ping_client* client, char* address)
 
     client->name = address;
 
-    client->packet = malloc(sizeof(t_icmp_packet) * MAX_PING_SAVES);
-    if (!client->packet)
+    client->packets = malloc(sizeof(t_icmp_packet) * MAX_PING_SAVES);
+    if (!client->packets)
     {
         perror("Malloc: ");
         return (ERROR);
     }
-    memset(client->packet, 0, sizeof(t_icmp_packet) * MAX_PING_SAVES);
+    memset(client->packets, 0, sizeof(t_icmp_packet) * MAX_PING_SAVES);
     return (SUCCESS);
 }
 
