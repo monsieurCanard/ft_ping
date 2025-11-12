@@ -10,17 +10,18 @@ void set_exit_program(int sig)
 
 int main(int ac, char** av)
 {
-    if (getuid() != 0)
-    {
-        fprintf(stderr, "ft_ping: must be run as root\n");
-        return (EXIT_FAILURE);
-    }
 
     t_ping_client client;
     memset(&client, 0, sizeof(t_ping_client));
 
     if (parse_args(ac, av, &client) == ERROR)
         return (EXIT_FAILURE);
+
+    if (getuid() != 0)
+    {
+        fprintf(stderr, "ft_ping: must be run as root\n");
+        return (EXIT_FAILURE);
+    }
 
     signal(SIGINT, set_exit_program);
 
@@ -33,6 +34,4 @@ int main(int ac, char** av)
 
     print_start_ping(&client);
     main_loop_icmp(&client);
-
-    exit_program(&client);
 }

@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <bits/types/struct_timeval.h>
 #include <errno.h>
 #include <getopt.h>
 #include <math.h>
@@ -59,13 +60,13 @@ typedef struct ping_counter
 {
     int transmitted;
     int received;
-    int error;
+    int dup;
     int lost;
 } t_ping_counter;
 
 typedef struct icmp_packet
 {
-    int status;
+    int receive;
 } t_icmp_packet;
 
 typedef struct data_icmp
@@ -85,8 +86,6 @@ typedef struct args
     int count;
     int timeout;
 } t_args;
-
-// typedef struct
 
 typedef struct ping_client
 {
@@ -108,42 +107,38 @@ typedef struct ping_client
 
 } t_ping_client;
 
+/// * PARSING AND SETUP FUNCTIONS
 int parse_args(int ac, char** av, t_ping_client* client);
-
 int create_client(t_ping_client* client, char* address);
 
+/// * ICMP MESSAGE CREATION
 int build_echo_request(t_ping_client* client, unsigned char* buff);
-
 int icmp_checksum(unsigned char* buff, int len);
 
-void print_ping_infos(t_ping_client* client, double success_rate, double mdev, int total_msg);
+/// * MAIN LOOP AND HANDLERS
+void  main_loop_icmp(t_ping_client* client);
+float verify_response_and_print(t_ping_client* client,
+                                unsigned char* buff,
+                                struct timeval recv_time);
 
-void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int count);
-
-void print_ping_line(
-    struct iphdr* ip, struct icmphdr* icmp, float rtt, int ttl, t_icmp_packet* packet);
-
-void print_start_ping(t_ping_client* client);
-
-void main_loop_icmp(t_ping_client* client);
-
-float verify_response(t_ping_client* client, unsigned char* buff, struct timeval recv_time);
-
-int timeout_or_resend(t_ping_client*  client,
-                      struct timeval* start_time,
-                      struct timeval* now,
-                      struct timeval* send_time);
-
-void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* client);
-
-void exit_program(t_ping_client* client);
-
-void print_helper();
-
-void print_error(char* msg);
-
-struct timeval add_timestamp(struct timeval* time1, struct timeval* time2);
-struct timeval sub_timestamp(struct timeval* time1, struct timeval* time2);
-bool           is_timeout(t_ping_client* client, struct timeval* now, struct timeval* time);
+int time_checker(t_ping_client*  client,
+                 struct timeval* start_time,
+                 struct timeval* now,
+                 struct timeval* send_time);
 
 bool resend_packet(t_ping_client* client, struct timeval* now, struct timeval* time);
+void handle_error_icmp(t_data_icmp icmp, t_ping_client* client);
+void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int count);
+
+/// * PRINTING FUNCTIONS
+void print_ping_final_stats(t_ping_client* client, double success_rate, double mdev, int total_msg);
+void print_ping_line(t_data_icmp icmp, float rtt, int ttl, bool dup);
+void print_start_ping(t_ping_client* client);
+
+/// * TIMESTAMP FUNCTIONS
+struct timeval add_timestamp(struct timeval* time1, struct timeval* time2);
+struct timeval sub_timestamp(struct timeval* time1, struct timeval* time2);
+
+/// * EXIT AND HELPERS
+void exit_program(t_ping_client* client);
+void print_helper();

@@ -2,12 +2,13 @@
 
 #include "../includes/ping.h"
 
-void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* client)
+void handle_error_icmp(t_data_icmp icmp, t_ping_client* client)
 {
-    if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP_DEST_UNREACH)
+    if (icmp.data->type == ICMP_TIME_EXCEEDED || icmp.data->type == ICMP_DEST_UNREACH)
     {
+
         /* the original IP header starts at icmp + 8 */
-        unsigned char*  inner     = (unsigned char*)icmp + 8;
+        unsigned char*  inner     = (unsigned char*)icmp.data + 8;
         struct iphdr*   orig_ip   = (struct iphdr*)inner;
         int             orig_ihl  = orig_ip->ihl * 4;
         struct icmphdr* orig_icmp = (struct icmphdr*)(inner + orig_ihl);
@@ -17,19 +18,18 @@ void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* cl
             return;
 
         if (client->args.all_args & OPT_VERBOSE)
-            fprintf(stderr,
-                    "%d bytes from %s : %s\n",
-                    ntohs(ip->tot_len),
-                    inet_ntoa(*(struct in_addr*)&ip->saddr),
-                    (icmp->type == ICMP_TIME_EXCEEDED) ? "Time to live exceeded"
-                                                       : "Destination Unreachable");
-        fprintf(stderr, "IP Hdr Dump:\n");
+            printf("%d bytes from %s : %s\n",
+                    ntohs(icmp.ip_header->tot_len),
+                    inet_ntoa(*(struct in_addr*)&icmp.ip_header->saddr),
+                    (icmp.data->type == ICMP_TIME_EXCEEDED) ? "Time to live exceeded"
+                                                            : "Destination Unreachable");
+        printf("IP Hdr Dump:\n");
         for (int i = 0; i < orig_ihl; i++)
         {
-            fprintf(stderr, "%02x", *((unsigned char*)orig_ip + i));
+            printf("%02x", *((unsigned char*)orig_ip + i));
             if ((i + 1) % 2 == 0)
             {
-                fprintf(stderr, " ");
+                printf(" ");
             }
         }
 
@@ -39,8 +39,8 @@ void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* cl
 
         printf("\nVr HL TOS  Len  ID  Flg  Off TTL Pro  Cks      Src            Dst\n");
         printf("%1d  %1d  %02x  %04d %04d %1d  %04d  %02d  %03d %04x  %s    %s\n",
-               (orig_ip->version & 0x0F),
-               (orig_ip->ihl & 0x0F),
+               (orig_ip->version),
+               (orig_ip->ihl),
                orig_ip->tos,
                ntohs(orig_ip->tot_len),
                ntohs(orig_ip->id),
@@ -59,17 +59,7 @@ void handle_error_icmp(struct icmphdr* icmp, struct iphdr* ip, t_ping_client* cl
                ntohs(orig_icmp->un.echo.id),
                ntohs(orig_icmp->un.echo.sequence));
 
-        client->counter.error++;
-        client->packets[orig_seq % MAX_PING_SAVES].status = -1;
+        client->packets[orig_seq % MAX_PING_SAVES].receive = ERROR;
         return;
     }
-    if (client->args.all_args & OPT_VERBOSE)
-        fprintf(stderr,
-                "From %s icmp_seq=%d type=%d code=%d\n",
-                inet_ntoa(*(struct in_addr*)&ip->saddr),
-                ntohs(icmp->un.echo.sequence),
-                icmp->type,
-                icmp->code);
-
-    client->counter.error++;
 }

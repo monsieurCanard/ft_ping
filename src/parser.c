@@ -32,10 +32,12 @@ int parse_args(int ac, char** av, t_ping_client* client)
         case 'v':
             client->args.all_args |= OPT_VERBOSE;
             break;
+
         case 't':
             client->args.all_args |= OPT_TTL;
             client->args.ttl = atoi(optarg);
             break;
+
         case 'i':
             client->args.all_args |= OPT_INTERVAL;
             client->args.interval = atoi(optarg); // en secondes
@@ -45,6 +47,7 @@ int parse_args(int ac, char** av, t_ping_client* client)
                 return (ERROR);
             }
             break;
+
         case 'c':
             client->args.all_args |= OPT_COUNT;
             client->args.count = atoi(optarg);
@@ -54,6 +57,7 @@ int parse_args(int ac, char** av, t_ping_client* client)
                 return (ERROR);
             }
             break;
+
         case 'W':
             client->args.all_args |= OPT_LINGER;
             client->args.linger = atoi(optarg);
