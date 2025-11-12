@@ -1,4 +1,4 @@
-<img width="2000" height="626" alt="Image" src="https://github.com/user-attachments/assets/0dbafb7c-d9d8-4e97-bff8-40c80c1a43e5" />
+<img  height="300" alt="Image" src="https://github.com/user-attachments/assets/0dbafb7c-d9d8-4e97-bff8-40c80c1a43e5" />
 
 # ft_ping
 
@@ -193,20 +193,20 @@ Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src          Dst          Data
 ```bash
 
 
-| Champ                         | Octets      | Valeur                 | Signification                                                 |
-| ----------------------------- | ----------- | ---------------------- | ------------------------------------------------------------- |
-| **Version (Vr)**              | `4`         | 4                      | Version du protocole IP (IPv4).                               |
-| **Header Length (HL)**        | `5`         | 5 × 4 = **20 octets**  | Taille de l’en-tête IP.                                       |
-| **Type of Service (TOS)**     | `00`        | 0x00                   | Pas de priorité particulière (deprecated → DSCP aujourd’hui). |
-| **Total Length (Len)**        | `0054`      | 0x0054 = **84 octets** | Taille totale du paquet IP (en-tête + données).               |
-| **Identification (ID)**       | `988b`      | 0x988b                 | Numéro d’identification utilisé pour la fragmentation.        |
-| **Flags (Flg)**               | `2` → `010` | DF=1                   | Le bit “Don’t Fragment” est positionné (ne pas fragmenter).   |
-| **Fragment Offset (off)**     | `0000`      | 0                      | Pas de fragmentation.                                         |
-| **Time To Live (TTL)**        | `01`        | 1                      | Le paquet a expiré après une seule route → cause de l’erreur. |
-| **Protocol (Pro)**            | `01`        | 1 = ICMP               | Indique que la couche supérieure est ICMP.                    |
-| **Header Checksum (cks)**     | `1568`      | 0x1568                 | Somme de contrôle de l’en-tête IP.                            |
-| **Source Address (Src)**      | `0a00 020f` | 10.0.2.15              | Adresse IP de la machine émettrice (toi).                     |
-| **Destination Address (Dst)** | `acd9 12ce` | 172.217.18.206         | Destination du paquet (ici Google).                           |
+| Champ                         | Signification                                                 |
+| ----------------------------- | ------------------------------------------------------------- |
+| **Version (Vr)**              | Version du protocole IP (IPv4).                               |
+| **Header Length (HL)**        | Taille de l’en-tête IP.                                       |
+| **Type of Service (TOS)**     | Pas de priorité particulière (deprecated → DSCP aujourd’hui). |
+| **Total Length (Len)**        | Taille totale du paquet IP (en-tête + données).               |
+| **Identification (ID)**       | Numéro d’identification utilisé pour la fragmentation.        |
+| **Flags (Flg)**               | Le bit “Don’t Fragment” est positionné (ne pas fragmenter).   |
+| **Fragment Offset (off)**     | Pas de fragmentation.                                         |
+| **Time To Live (TTL)**        | Le paquet a expiré après une seule route → cause de l’erreur. |
+| **Protocol (Pro)**            | Indique que la couche supérieure est ICMP.                    |
+| **Header Checksum (cks)**     | Somme de contrôle de l’en-tête IP.                            |
+| **Source Address (Src)**      | Adresse IP de la machine émettrice (toi).                     |
+| **Destination Address (Dst)** | Destination du paquet (ici Google).                           |
 
 ```
 
