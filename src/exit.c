@@ -5,8 +5,6 @@ void exit_program(t_ping_client* client)
     int msg_transmitted = client->counter.transmitted;
     if (client->fd > 0)
     {
-        double mdev =
-            (msg_transmitted > 0) ? sqrt(client->time_stats.delta / msg_transmitted) : 0.0;
 
         double success_rate =
             msg_transmitted == 0

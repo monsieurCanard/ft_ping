@@ -20,14 +20,14 @@ void print_start_ping(t_ping_client* client)
     printf("\n");
 }
 
-void print_ping_final_stats(t_ping_client* client, double success_rate, double mdev, int total_msg)
+void print_ping_final_stats(t_ping_client* client, double success_rate)
 {
     fprintf(stdout, "\n--- %s ping statistics ---\n", client->ip);
 
     if (client->counter.dup != 0)
     {
         printf("%d packets transmitted, %d packets received, +%d duplicates, %.1f%% packet loss\n",
-               total_msg,
+               client->counter.transmitted,
                client->counter.received,
                client->counter.dup,
                success_rate);
@@ -35,18 +35,18 @@ void print_ping_final_stats(t_ping_client* client, double success_rate, double m
     else
     {
         printf("%d packets transmitted, %d packets received, %.1f%% packet loss\n",
-               total_msg,
+               client->counter.transmitted,
                client->counter.received,
                success_rate);
     }
 
     if (client->counter.received > 0)
     {
-        printf("round-trip min/avg/maxvvvv/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
+        printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
                client->time_stats.min,
                client->time_stats.average,
                client->time_stats.max,
-               mdev);
+               client->time_stats.stddev);
     }
 }
 

@@ -43,6 +43,7 @@ typedef struct time_stats
 
     double total;
     double delta;
+    double stddev;
 
 } t_time_stats;
 

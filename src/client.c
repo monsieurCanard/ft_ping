@@ -86,4 +86,5 @@ void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int coun
     double tmp_delta = new_rtt - time_stats->average;
     time_stats->average += tmp_delta / count;
     time_stats->delta += tmp_delta * (new_rtt - time_stats->average);
+    time_stats->stddev = (count > 1) ? sqrt(time_stats->delta / (count - 1)) : 0.0;
 }

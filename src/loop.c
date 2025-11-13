@@ -85,9 +85,7 @@ void main_loop_icmp(t_ping_client* client)
             new_rtt = verify_response_and_print(client, recv_buff, recv_time);
             if (new_rtt != ERROR)
             {
-                update_client_time_stats(&client->time_stats,
-                                         new_rtt,
-                                         client->counter.received + client->counter.lost + 1);
+                update_client_time_stats(&client->time_stats, new_rtt, client->counter.received);
                 if (client->args.all_args & OPT_COUNT &&
                     client->counter.received >= client->args.count)
                 {
