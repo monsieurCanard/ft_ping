@@ -1,0 +1,20 @@
+version: '3.3'
+services:
+  node1:
+    build: .
+    cap_add: [NET_ADMIN, NET_RAW]
+    networks: ["net1"]
+  node2:
+    build: .
+    cap_add: [NET_ADMIN, NET_RAW]
+    networks: ["net2", net1]
+  node3:
+    build: .
+    cap_add: [NET_ADMIN, NET_RAW]
+    networks: ["net2"]
+networks:
+  net1:
+    driver: bridge
+  net2:
+    driver: bridge
+

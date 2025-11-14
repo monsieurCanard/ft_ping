@@ -7,10 +7,9 @@ extern bool g_exit_program;
 
 static void send_message(t_ping_client* client, struct sockaddr_in sockaddr)
 {
-    unsigned char send_buff[sizeof(struct iphdr) + PAYLOAD_SIZE];
+    unsigned char send_buff[sizeof(struct icmphdr) + PAYLOAD_SIZE];
     int           payload_size = 0;
 
-    client->seq++;
     client->counter.transmitted++;
 
     payload_size = build_echo_request(client, send_buff);
@@ -25,10 +24,11 @@ static void send_message(t_ping_client* client, struct sockaddr_in sockaddr)
                payload_size,
                0,
                (struct sockaddr*)&sockaddr,
-               sizeof(sockaddr)) == -1)
+               sizeof(sockaddr)) == ERROR)
     {
         perror("Sendto error: ");
     }
+    client->seq++;
 
     client->packets[client->seq % MAX_PING_SAVES].receive = false;
 }
@@ -71,7 +71,7 @@ void main_loop_icmp(t_ping_client* client)
 
         if (ret == 1)
         {
-            if (FD_ISSET(client->fd, &client->read_fds) == 0)
+            if (!FD_ISSET(client->fd, &client->read_fds))
                 continue;
 
             struct sockaddr_in src_addr;
@@ -97,4 +97,5 @@ void main_loop_icmp(t_ping_client* client)
             }
         }
     }
+    exit_program(client);
 }

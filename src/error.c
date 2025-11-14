@@ -8,7 +8,7 @@ void handle_error_icmp(t_data_icmp icmp, t_ping_client* client)
     {
 
         /* the original IP header starts at icmp + 8 */
-        unsigned char*  inner     = (unsigned char*)icmp.data + 8;
+        unsigned char*  inner     = (unsigned char*)icmp.data + sizeof(struct icmphdr);
         struct iphdr*   orig_ip   = (struct iphdr*)inner;
         int             orig_ihl  = orig_ip->ihl * 4;
         struct icmphdr* orig_icmp = (struct icmphdr*)(inner + orig_ihl);
@@ -19,10 +19,10 @@ void handle_error_icmp(t_data_icmp icmp, t_ping_client* client)
 
         if (client->args.all_args & OPT_VERBOSE)
             printf("%d bytes from %s : %s\n",
-                    ntohs(icmp.ip_header->tot_len),
-                    inet_ntoa(*(struct in_addr*)&icmp.ip_header->saddr),
-                    (icmp.data->type == ICMP_TIME_EXCEEDED) ? "Time to live exceeded"
-                                                            : "Destination Unreachable");
+                   ntohs(icmp.ip_header->tot_len),
+                   inet_ntoa(*(struct in_addr*)&icmp.ip_header->saddr),
+                   (icmp.data->type == ICMP_TIME_EXCEEDED) ? "Time to live exceeded"
+                                                           : "Destination Unreachable");
         printf("IP Hdr Dump:\n");
         for (int i = 0; i < orig_ihl; i++)
         {

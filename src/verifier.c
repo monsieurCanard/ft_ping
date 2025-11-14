@@ -26,7 +26,7 @@ static bool paquet_valid(t_ping_client* client, t_data_icmp icmp)
     struct icmphdr* icmp_check        = (struct icmphdr*)icmp_buf;
     icmp_check->checksum              = 0;
     uint16_t recv_checksum =
-        icmp_checksum((unsigned char*)icmp_check, sizeof(struct iphdr) + PAYLOAD_SIZE);
+        icmp_checksum((unsigned char*)icmp_check, sizeof(struct icmphdr) + PAYLOAD_SIZE);
 
     struct in_addr addr;
     addr.s_addr = icmp.ip_header->saddr;

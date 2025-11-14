@@ -55,7 +55,7 @@ void print_ping_line(t_data_icmp icmp, float rtt, int ttl, bool dup)
     struct in_addr addr;
     addr.s_addr = icmp.ip_header->saddr;
 
-    printf("%d bytes from %s: icmp_seq=%d ttl=%d rtt=%.2f ms",
+    printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.2f ms",
            PAYLOAD_SIZE + 8,
            inet_ntoa(addr),
            ntohs(icmp.data->un.echo.sequence),

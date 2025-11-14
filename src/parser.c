@@ -83,5 +83,11 @@ int parse_args(int ac, char** av, t_ping_client* client)
             return (ERROR);
         }
     }
+
+    if (optind >= ac)
+    {
+        fprintf(stderr, "ft_ping: missing destination address\n");
+        return (ERROR);
+    }
     return (SUCCESS);
 }
