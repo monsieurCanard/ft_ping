@@ -8,7 +8,7 @@ static int resolve_host(t_ping_client* client, char* address)
     hints.ai_socktype = SOCK_RAW;
 
     int status = getaddrinfo(address, NULL, &hints, &res);
-    if (status != 0)
+    if (status != SUCCESS)
     {
         fprintf(stderr, "Could not resolve hostname %s: %s\n", address, gai_strerror(status));
         return (ERROR);
@@ -38,6 +38,7 @@ static int create_socket(t_ping_client* client)
                 client->fd, IPPROTO_IP, IP_TTL, &client->args.ttl, sizeof(client->args.ttl)) < 0)
         {
             perror("Setsockopt TTL: ");
+            close(client->fd);
             return (ERROR);
         }
     }
@@ -71,6 +72,7 @@ int create_client(t_ping_client* client, char* address)
 
 void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int count)
 {
+    // define macro for min and max
     if (time_stats->min == -1 || new_rtt < time_stats->min)
     {
         time_stats->min = new_rtt;
@@ -84,6 +86,7 @@ void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int coun
     time_stats->total += new_rtt;
 
     double tmp_delta = new_rtt - time_stats->average;
+
     time_stats->average += tmp_delta / count;
     time_stats->delta += tmp_delta * (new_rtt - time_stats->average);
     time_stats->stddev = (count > 1) ? sqrt(time_stats->delta / (count - 1)) : 0.0;

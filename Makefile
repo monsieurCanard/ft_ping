@@ -1,10 +1,19 @@
 NAME = ft_ping
 
-CC_FLAGS = -Wall -Wextra -Werror -g -I include/
+CC_FLAGS = -Wall -Wextra -Werror -g -I includes/
 
 SRC_DIR = src/
 
-SRC = $(shell find $(SRC_DIR) -name '*.c')
+SRC = $(SRC_DIR)main.c \
+			$(SRC_DIR)builder.c \
+			$(SRC_DIR)client.c \
+			$(SRC_DIR)error.c \
+			$(SRC_DIR)loop.c \
+			$(SRC_DIR)parser.c \
+			$(SRC_DIR)printer.c \
+			$(SRC_DIR)timestamp.c \
+			$(SRC_DIR)verifier.c \
+			$(SRC_DIR)exit.c
 
 OBJ_DIR = obj/
 

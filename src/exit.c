@@ -11,7 +11,7 @@ void exit_program(t_ping_client* client)
                 ? 0.0
                 : ((msg_transmitted - client->counter.received) / (double)msg_transmitted) * 100.0;
 
-        print_ping_final_stats(client, success_rate, mdev, msg_transmitted);
+        print_ping_final_stats(client, success_rate);
         close(client->fd);
     }
 

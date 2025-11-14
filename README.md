@@ -111,7 +111,7 @@ int build_echo_request(unsigned char* buff) {
 	
 	// Payload Size = 56
 	// ICMP header = 8
-	memset(buff, 0, 8 + PAYLOAD_SIZE);
+	memset(buff, 0, sizeof(struct iphdr) + PAYLOAD_SIZE);
 
 	// Type du message ICMP 
 	// 8 = Echo Request 

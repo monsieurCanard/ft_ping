@@ -1,4 +1,5 @@
 #include <netinet/in.h>
+#include <netinet/ip.h>
 
 #include "../includes/ping.h"
 
@@ -6,7 +7,7 @@ extern bool g_exit_program;
 
 static void send_message(t_ping_client* client, struct sockaddr_in sockaddr)
 {
-    unsigned char send_buff[8 + PAYLOAD_SIZE];
+    unsigned char send_buff[sizeof(struct iphdr) + PAYLOAD_SIZE];
     int           payload_size = 0;
 
     client->seq++;
@@ -34,7 +35,7 @@ static void send_message(t_ping_client* client, struct sockaddr_in sockaddr)
 
 void main_loop_icmp(t_ping_client* client)
 {
-    unsigned char  recv_buff[8 + 20 + PAYLOAD_SIZE];
+    unsigned char  recv_buff[sizeof(struct iphdr) + sizeof(struct icmphdr) + PAYLOAD_SIZE];
     struct timeval start_time, recv_time, send_time, now;
     float          new_rtt;
 
@@ -62,7 +63,9 @@ void main_loop_icmp(t_ping_client* client)
         int ret = select(client->fd + 1, &client->read_fds, NULL, NULL, &timeout);
         if (ret < 0)
         {
-            client->status = EXIT_FAILURE;
+            if (errno != EINTR)
+                client->status = EXIT_FAILURE;
+
             exit_program(client);
         }
 

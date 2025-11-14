@@ -132,7 +132,7 @@ void handle_error_icmp(t_data_icmp icmp, t_ping_client* client);
 void update_client_time_stats(t_time_stats* time_stats, double new_rtt, int count);
 
 /// * PRINTING FUNCTIONS
-void print_ping_final_stats(t_ping_client* client, double success_rate, double mdev, int total_msg);
+void print_ping_final_stats(t_ping_client* client, double success_rate);
 void print_ping_line(t_data_icmp icmp, float rtt, int ttl, bool dup);
 void print_start_ping(t_ping_client* client);
 

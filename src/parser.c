@@ -13,17 +13,18 @@ int parse_args(int ac, char** av, t_ping_client* client)
 
     int opt;
     opterr = 0;
-    while ((opt = getopt_long(ac, av, "?vl:t:i:c:W:w:", long_options, NULL)) != -1)
+    while ((opt = getopt_long(ac, av, "?vt:i:c:W:w:", long_options, NULL)) != ERROR)
     {
         switch (opt)
         {
         case '?':
             if (optopt != 0)
             {
-                if (optopt == 't' || optopt == 'i' || optopt == 'c' || optopt == 'W')
-                    fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+                if (optopt == 't' || optopt == 'i' || optopt == 'c' || optopt == 'W' ||
+                    optopt == 'w')
+                    fprintf(stderr, "ft_ping: option -%c requires an argument.\n", optopt);
                 else
-                    fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+                    fprintf(stderr, "ft_ping: unknown option '-%c'.\n", optopt);
                 return (ERROR);
             }
             print_helper();
@@ -40,10 +41,10 @@ int parse_args(int ac, char** av, t_ping_client* client)
 
         case 'i':
             client->args.all_args |= OPT_INTERVAL;
-            client->args.interval = atoi(optarg); // en secondes
-            if (client->args.interval < 0)
+            client->args.interval = atoi(optarg);
+            if (client->args.interval <= 0)
             {
-                fprintf(stderr, "ping: invalid interval %s\n", optarg);
+                fprintf(stderr, "ft_ping: invalid interval %s\n", optarg);
                 return (ERROR);
             }
             break;
@@ -53,7 +54,7 @@ int parse_args(int ac, char** av, t_ping_client* client)
             client->args.count = atoi(optarg);
             if (client->args.count <= 0)
             {
-                fprintf(stderr, "ping: bad number of packets to transmit.\n");
+                fprintf(stderr, "ft_ping: bad number of packets to transmit.\n");
                 return (ERROR);
             }
             break;
@@ -61,9 +62,9 @@ int parse_args(int ac, char** av, t_ping_client* client)
         case 'W':
             client->args.all_args |= OPT_LINGER;
             client->args.linger = atoi(optarg);
-            if (client->args.linger < 0)
+            if (client->args.linger <= 0)
             {
-                fprintf(stderr, "ping: invalid linger time %s\n", optarg);
+                fprintf(stderr, "ft_ping: invalid linger time %s\n", optarg);
                 return (ERROR);
             }
             break;
@@ -71,14 +72,14 @@ int parse_args(int ac, char** av, t_ping_client* client)
         case 'w':
             client->args.all_args |= OPT_TIMEOUT;
             client->args.timeout = atoi(optarg);
-            if (client->args.timeout < 0)
+            if (client->args.timeout <= 0)
             {
-                fprintf(stderr, "ping: invalid timeout %s\n", optarg);
+                fprintf(stderr, "ft_ping: invalid timeout %s\n", optarg);
                 return (ERROR);
             }
             break;
         default:
-            fprintf(stderr, "Unknown option: %c\n", opt);
+            fprintf(stderr, "ft_ping: unknown option '%c'\n", opt);
             return (ERROR);
         }
     }

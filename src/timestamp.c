@@ -43,9 +43,5 @@ bool resend_packet(t_ping_client* client, struct timeval* now, struct timeval* t
 
     struct timeval diff         = sub_timestamp(now, time);
     float          elapsed_time = diff.tv_sec + diff.tv_usec / 1000000.0;
-    if (elapsed_time >= (float)interval)
-    {
-        return true;
-    }
-    return false;
+    return (elapsed_time >= (float)interval);
 }

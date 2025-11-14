@@ -25,7 +25,8 @@ static bool paquet_valid(t_ping_client* client, t_data_icmp icmp)
     uint16_t        recv_seq          = ntohs(icmp.data->un.echo.sequence);
     struct icmphdr* icmp_check        = (struct icmphdr*)icmp_buf;
     icmp_check->checksum              = 0;
-    uint16_t recv_checksum            = icmp_checksum((unsigned char*)icmp_check, 8 + PAYLOAD_SIZE);
+    uint16_t recv_checksum =
+        icmp_checksum((unsigned char*)icmp_check, sizeof(struct iphdr) + PAYLOAD_SIZE);
 
     struct in_addr addr;
     addr.s_addr = icmp.ip_header->saddr;
@@ -66,6 +67,7 @@ static bool paquet_valid(t_ping_client* client, t_data_icmp icmp)
             case ICMP_PORT_UNREACH:
                 printf("Port unreachable\n");
                 break;
+                // TODO: redirect
             default:
                 printf(
                     "From %s : Received packet with code %d\n ", inet_ntoa(addr), icmp.data->code);
@@ -93,7 +95,7 @@ float verify_response_and_print(t_ping_client* client,
     if (!paquet_valid(client, icmp))
         return (ERROR);
 
-    unsigned char icmp_buf[8 + PAYLOAD_SIZE];
+    unsigned char icmp_buf[8 + PAYLOAD_SIZE]; // TODO magic number
     memcpy(icmp_buf, icmp.data, 8 + PAYLOAD_SIZE);
 
     uint16_t        recv_seq  = ntohs(icmp.data->un.echo.sequence);
@@ -105,7 +107,8 @@ float verify_response_and_print(t_ping_client* client,
     if (client->packets[recv_seq % MAX_PING_SAVES].receive == ERROR)
     {
         if (client->args.all_args & OPT_VERBOSE)
-            printf("Late reply for icmp_seq %d (previously timed out)\n", recv_seq);
+            printf("Late reply for icmp_seq %d (not considered because previously timed out)\n",
+                   recv_seq);
         return (ERROR);
     }
     else if (client->packets[recv_seq % MAX_PING_SAVES].receive == true)
@@ -113,8 +116,6 @@ float verify_response_and_print(t_ping_client* client,
         dup = true;
         client->counter.dup++;
     }
-
-    client->packets[recv_seq % MAX_PING_SAVES].receive = true;
 
     if ((client->args.all_args & OPT_LINGER && rtt > (float)client->args.linger * 1000.0) ||
         rtt > (float)TIMEOUT_SEC * 1000.0)
