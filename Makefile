@@ -1,6 +1,6 @@
 NAME = ft_ping
 
-CC_FLAGS = -Wall -Wextra -Werror -g -I includes/
+CC_FLAGS = -Wall -Wextra -Werror -I includes/
 
 SRC_DIR = src/
 
