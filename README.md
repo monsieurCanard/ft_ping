@@ -1,8 +1,14 @@
 <div align="center">
 <img width="1000" height="350" alt="Image" src="https://github.com/user-attachments/assets/fd3ee28b-e526-46ea-bc16-213eb72ab26e" />
-</div>
 
 # ft_ping
+</div>
+
+<p align="center">
+  <a href="https://en.wikipedia.org/wiki/C_(programming_language)"><img src="https://img.shields.io/badge/Language-C-blue.svg" alt="Language"></a>
+  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
+  <a href="https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol"><img src="https://img.shields.io/badge/Network-ICMP-orange.svg" alt="Network"></a>
+</p>
 
 Recréation complète de la commande `ping` (compatible inetutils-2.X) en C avec gestion des sockets RAW et du protocole ICMP.
 
