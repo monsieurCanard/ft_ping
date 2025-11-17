@@ -1,4 +1,4 @@
-<img  height="300" alt="Image" src="https://github.com/user-attachments/assets/0dbafb7c-d9d8-4e97-bff8-40c80c1a43e5" />
+<img width="2000" height="626" alt="Image" src="https://github.com/user-attachments/assets/fd3ee28b-e526-46ea-bc16-213eb72ab26e" />
 
 # ft_ping
 
